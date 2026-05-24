@@ -71,5 +71,28 @@
 
   <script src="lib/vk-bridge.min.js"></script>
   <script type="module" src="js/main.js"></script>
+  <script>
+  // Автогенерация иконок для GitHub Pages preview
+  (function(){
+    const sizes = [32, 128, 512];
+    sizes.forEach(size => {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0,0,size,size);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = `bold ${size*0.6}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🔥', size/2, size/2);
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.sizes = `${size}x${size}`;
+      link.href = c.toDataURL();
+      document.head.appendChild(link);
+    });
+  })();
+</script>
 </body>
 </html>
