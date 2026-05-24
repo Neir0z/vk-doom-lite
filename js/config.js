@@ -43,3 +43,6 @@ export const VK = { storageKey: 'doom_highscore' };
 // В конец файла добавь:
 // Экспорт MAP для использования в других модулях
 globalThis.MAP = MAP;
+
+// Глобальный доступ для Enemy3D
+window.RENDER = RENDER;
