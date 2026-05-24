@@ -24,6 +24,10 @@ let stepTimer = 0;
 let currentWeapon = 'pistol';
 let hasShotgun = false, hasMachinegun = false;
 
+// Загрузка спрайта пистолета
+const pistolImg = new Image();
+pistolImg.src = 'assets/pistol.png';
+
 if (canvas) {
   canvas.width = RENDER.numRays;
   canvas.height = Math.floor(RENDER.numRays * 0.6);
@@ -113,8 +117,6 @@ document.addEventListener('pointerdown', () => audio.init(), { once: true });
 
 const wallTex = AssetGenerator.createWallTexture();
 const particles = new ParticleEffects();
-const pistolImg = new Image();
-pistolImg.src = 'assets/pistol.png';
 const player = new Player(7.5 * RENDER.mapScale, 4.5 * RENDER.mapScale);
 const weapon = new Weapon('pistol', player);
 const minimap = new Minimap();
