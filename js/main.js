@@ -106,13 +106,15 @@ function startGame() {
   console.log('✅ Game running!');
 }
 
-const raycaster = new Raycaster(canvas);
+const raycaster = new Raycaster(canvas, pistolImg);
 const input = new InputManager();
 const audio = new SoundManager();
 document.addEventListener('pointerdown', () => audio.init(), { once: true });
 
 const wallTex = AssetGenerator.createWallTexture();
 const particles = new ParticleEffects();
+const pistolImg = new Image();
+pistolImg.src = 'assets/pistol.png';
 const player = new Player(7.5 * RENDER.mapScale, 4.5 * RENDER.mapScale);
 const weapon = new Weapon('pistol', player);
 const minimap = new Minimap();
