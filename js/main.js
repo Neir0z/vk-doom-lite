@@ -2,8 +2,11 @@ console.log('🎮 main.js loaded!');
 console.log('📦 Loading config...');
 
 import { GAME, PLAYER, SHOP, WAVES, RENDER, MAP, WEAPONS, ENEMY_TYPES } from './config.js';
+console.log('✅ Config loaded');
 
-console.log('✅ Config loaded:', { GAME, RENDER });
+console.log('📦 Loading InputManager...');
+import { InputManager } from './core/Input.js';
+console.log('✅ InputManager loaded');
 
 async function bootstrap() {
   console.log('✅ Bootstrap started');
@@ -15,14 +18,17 @@ async function bootstrap() {
   if (loader) loader.classList.add('hidden');
   if (ui) ui.classList.remove('hidden');
   
-  // Тест
+  // Тест InputManager
+  const input = new InputManager();
+  console.log('Input created:', input);
+  
   if (canvas) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0f0';
     ctx.font = '16px monospace';
-    ctx.fillText('Config loaded! MAP size: ' + MAP.length + 'x' + MAP[0].length, 10, 30);
+    ctx.fillText('Input OK! Move: WASD', 10, 30);
   }
 }
 
