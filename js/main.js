@@ -14,8 +14,20 @@ import { Enemy3D } from './core/Enemy3D.js';
 import { MusicGenerator } from './audio/MusicGenerator.js';
 
 const loader = document.getElementById('loader');
+const canvas = document.getElementById('game');
 const music = new MusicGenerator();
 let currentScreen = 'menu';
+let gameStarted = false;
+
+// Инициализация размера canvas
+function resizeCanvas() {
+  if (!canvas) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = RENDER.numRays;
+  canvas.height = Math.floor(RENDER.numRays * 0.6);
+  canvas.style.width = '100vw';
+  canvas.style.height = '100vh';
+}
 
 window.showScreen = function(screenName) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -24,12 +36,14 @@ window.showScreen = function(screenName) {
     target.classList.remove('hidden');
     currentScreen = screenName;
   }
-  if (screenName === 'game') startGame();
+  if (screenName === 'game' && !gameStarted) {
+    startGame();
+  }
 };
 
 window.exitGame = function() {
   if (window.vkBridge) window.vkBridge.send('VKWebAppClose');
-  else { window.close(); alert('Обновите страницу'); }
+  else window.close();
 };
 
 window.buyItem = function(type, cost) {
@@ -46,7 +60,10 @@ window.buyItem = function(type, cost) {
 };
 
 function startGame() {
+  if (gameStarted) return;
+  gameStarted = true;
   currentScreen = 'game';
+  resizeCanvas();
   music.play();
   enemies.length = 0;
   player.health = PLAYER.maxHealth;
@@ -61,19 +78,8 @@ function startGame() {
   hasMachinegun = false;
   waveManager.startWave();
   updateHUD();
-  
-  // Установить размер canvas
-  if (canvas) {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    raycaster.width = RENDER.numRays;
-    raycaster.height = Math.floor(RENDER.numRays * 0.6);
-    canvas.width = raycaster.width;
-    canvas.height = raycaster.height;
-  }
 }
 
-const canvas = document.getElementById('game');
 const raycaster = new Raycaster(canvas);
 const input = new InputManager();
 const audio = new SoundManager();
@@ -225,7 +231,7 @@ function gameLoop(ts) {
   const dt = Math.min((ts-lastTime)/1000, 0.04);
   lastTime = ts;
 
-  if(currentScreen==='game') {
+  if(currentScreen==='game' && gameStarted) {
     player.update(dt, input);
     weapon.update(dt);
     if(input.isShooting()) { shootRaycast(); input.resetShoot(); }
@@ -250,9 +256,12 @@ function gameLoop(ts) {
   }
 
   const ctx = raycaster.ctx;
-  raycaster.render(ts, player, wallTex);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   
-  if(currentScreen === 'game' || currentScreen === 'shop' || currentScreen === 'gameover') {
+  if(gameStarted) {
+    raycaster.render(ts, player, wallTex);
+    
     enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
     for(const e of enemies) if(e.active) e.draw(ctx, player);
     particles.draw(ctx);
@@ -275,6 +284,9 @@ function gameLoop(ts) {
 
   requestAnimationFrame(gameLoop);
 }
+
+// Инициализация
+resizeCanvas();
 
 setTimeout(() => {
   if(loader) loader.classList.add('hidden');
