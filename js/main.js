@@ -13,35 +13,43 @@ import { WaveManager } from './core/WaveManager.js';
 import { Enemy3D } from './core/Enemy3D.js';
 import { MusicGenerator } from './audio/MusicGenerator.js';
 
-// Состояние экрана
-let currentScreen = 'menu'; // 'menu', 'game', 'shop', 'gameover', 'rules'
-
 // DOM
-const menuEl = document.getElementById('menu');
-const canvas = document.getElementById('game');
-const ui = document.getElementById('ui');
-
-// Музыка
+const loader = document.getElementById('loader');
 const music = new MusicGenerator();
+let currentScreen = 'menu';
 
-// Кнопки меню
-document.getElementById('btn-new-game').onclick = startGame;
-document.getElementById('btn-menu-shop').onclick = () => { currentScreen='shop'; ui.querySelector('.modal-shop')?.showModal(); };
-document.getElementById('btn-rules').onclick = () => document.getElementById('modal-rules').showModal();
-document.getElementById('btn-close-rules').onclick = () => document.getElementById('modal-rules').close();
-document.getElementById('btn-support').onclick = () => alert('Поддержка: support@doom-lite.ru');
-document.getElementById('btn-exit').onclick = () => {
-  if(window.vkBridge) window.vkBridge.send('VKWebAppClose');
-  else window.close();
+// Глобальные функции
+window.showScreen = function(screenName) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const target = document.getElementById('screen-' + screenName);
+  if (target) {
+    target.classList.remove('hidden');
+    currentScreen = screenName;
+  }
+  if (screenName === 'game') startGame();
+};
+
+window.exitGame = function() {
+  if (window.vkBridge) window.vkBridge.send('VKWebAppClose');
+  else { window.close(); alert('Обновите страницу'); }
+};
+
+window.buyItem = function(type, cost) {
+  if (player.score >= cost) {
+    player.score -= cost;
+    if (type === 'health') player.health = Math.min(PLAYER.maxHealth, player.health + 50);
+    if (type === 'ammo') player.ammo = Math.min(PLAYER.maxAmmo, player.ammo + 20);
+    if (type === 'shotgun') { hasShotgun = true; currentWeapon = 'shotgun'; weapon.switchTo('shotgun'); }
+    if (type === 'machinegun') { hasMachinegun = true; currentWeapon = 'machinegun'; weapon.switchTo('machinegun'); }
+    const el = document.getElementById('shop-coins');
+    if (el) el.textContent = player.score;
+    audio.playPickup();
+  } else alert('Недостаточно монет!');
 };
 
 function startGame() {
   currentScreen = 'game';
-  menuEl.classList.add('hidden');
-  ui.classList.remove('hidden');
   music.play();
-  
-  // Сброс игры
   enemies.length = 0;
   player.health = PLAYER.maxHealth;
   player.ammo = PLAYER.maxAmmo;
@@ -51,13 +59,14 @@ function startGame() {
   player.angle = 0;
   weapon.switchTo('pistol');
   currentWeapon = 'pistol';
-  hasShotgun = false; hasMachinegun = false;
+  hasShotgun = false;
+  hasMachinegun = false;
   waveManager.startWave();
-  
-  requestAnimationFrame(gameLoop);
+  updateHUD();
 }
 
-// Инициализация игры
+// Инициализация
+const canvas = document.getElementById('game');
 const raycaster = new Raycaster(canvas);
 const input = new InputManager();
 const audio = new SoundManager();
@@ -95,6 +104,8 @@ function updateHUD() {
   if(uiEls.ammo) uiEls.ammo.textContent = player.ammo;
   if(uiEls.money) uiEls.money.textContent = player.score;
   if(uiEls.wave) uiEls.wave.textContent = WAVES.startEnemies + (waveManager.wave-1)*WAVES.increasePerWave;
+  const shopCoins = document.getElementById('shop-coins');
+  if(shopCoins) shopCoins.textContent = player.score;
 }
 
 window.addEventListener('keydown', e => {
@@ -123,22 +134,40 @@ const waveManager = new WaveManager(() => {
 
 function openShop() {
   currentScreen='shop';
-  uiEls.shopMoney.textContent=player.score;
-  if(uiEls.shopModal) uiEls.shopModal.showModal();
+  if(uiEls.shopModal) {
+    uiEls.shopMoney.textContent = player.score;
+    uiEls.shopModal.showModal();
+  }
   if(uiEls.btnHealth) uiEls.btnHealth.disabled = player.score<SHOP.healthCost;
   if(uiEls.btnAmmo) uiEls.btnAmmo.disabled = player.score<SHOP.ammoCost;
 }
+
 function closeShop() {
   currentScreen='game';
   if(uiEls.shopModal) uiEls.shopModal.close();
   waveManager.nextWave();
 }
+
 if(uiEls.btnHealth) uiEls.btnHealth.onclick = () => {
-  if(player.score>=SHOP.healthCost) { player.score-=SHOP.healthCost; player.health=Math.min(PLAYER.maxHealth, player.health+SHOP.healthAmount); updateHUD(); uiEls.shopMoney.textContent=player.score; audio.playPickup(); }
+  if(player.score>=SHOP.healthCost) {
+    player.score-=SHOP.healthCost;
+    player.health=Math.min(PLAYER.maxHealth, player.health+SHOP.healthAmount);
+    updateHUD();
+    if(uiEls.shopMoney) uiEls.shopMoney.textContent=player.score;
+    audio.playPickup();
+  }
 };
+
 if(uiEls.btnAmmo) uiEls.btnAmmo.onclick = () => {
-  if(player.score>=SHOP.ammoCost) { player.score-=SHOP.ammoCost; player.ammo=Math.min(PLAYER.maxAmmo, player.ammo+SHOP.ammoAmount); updateHUD(); uiEls.shopMoney.textContent=player.score; audio.playPickup(); }
+  if(player.score>=SHOP.ammoCost) {
+    player.score-=SHOP.ammoCost;
+    player.ammo=Math.min(PLAYER.maxAmmo, player.ammo+SHOP.ammoAmount);
+    updateHUD();
+    if(uiEls.shopMoney) uiEls.shopMoney.textContent=player.score;
+    audio.playPickup();
+  }
 };
+
 if(uiEls.btnNext) uiEls.btnNext.onclick = closeShop;
 if(uiEls.btnRestart) uiEls.btnRestart.onclick = () => location.reload();
 
@@ -240,14 +269,9 @@ function gameLoop(ts) {
   requestAnimationFrame(gameLoop);
 }
 
-// Показать меню после загрузки
 setTimeout(() => {
-  const loader = document.getElementById('loader');
-  const menu = document.getElementById('menu');
-  if (loader) loader.classList.add('hidden');
-  if (menu) menu.classList.remove('hidden');
-  console.log('📋 Menu shown');
+  if(loader) loader.classList.add('hidden');
+  showScreen('menu');
 }, 800);
 
-requestAnimationFrame(gameLoop);
 console.log('🎮 READY');
