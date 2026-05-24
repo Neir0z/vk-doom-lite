@@ -260,10 +260,18 @@ function gameLoop(ts) {
   const dt = Math.min((ts-lastTime)/1000, 0.04);
   lastTime = ts;
 
+  let isShooting = false;
+
   if(currentScreen==='game' && gameStarted) {
     player.update(dt, input);
     weapon.update(dt);
-    if(input.isShooting()) { shootRaycast(); input.resetShoot(); }
+    
+    isShooting = input.isShooting();
+    
+    if(isShooting) { 
+      shootRaycast(); 
+      input.resetShoot(); 
+    }
     
     const mv = input.getMovement();
     if(Math.abs(mv.move)>0.1) { stepTimer+=dt; if(stepTimer>0.35){audio.playStep();stepTimer=0;} }
@@ -290,8 +298,6 @@ function gameLoop(ts) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     if(gameStarted) {
-      // Передаём состояние стрельбы
-      const isShooting = input.isShooting();
       raycaster.render(ts, player, wallTex, isShooting);
       
       enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
