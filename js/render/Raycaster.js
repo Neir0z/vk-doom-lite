@@ -1,7 +1,7 @@
 import { MAP, RENDER } from '../config.js';
 
 export class Raycaster {
-  constructor(canvas) {
+  constructor(canvas, weaponImg) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.width = RENDER.numRays;
@@ -12,6 +12,7 @@ export class Raycaster {
     this.ctx.imageSmoothingEnabled = false;
     
     this.zBuffer = new Array(this.width).fill(0);
+    this.weaponImg = weaponImg;
   }
 
   render(time, player, wallTex) {
@@ -121,22 +122,14 @@ export class Raycaster {
   }
 
   _drawWeapon(ctx, time, isFiring) {
-    const bobX = Math.sin(time * 0.005) * 3;
-    const bobY = Math.abs(Math.cos(time * 0.005)) * 5;
-    const recoil = isFiring ? 15 : 0;
-    const cx = this.width / 2 + bobX;
-    const cy = this.height + bobY - recoil;
-
-    ctx.fillStyle = '#3a3a4a';
-    ctx.fillRect(cx - 12, cy - 90, 24, 90);
-    ctx.fillStyle = '#222';
-    ctx.fillRect(cx - 8, cy - 40, 16, 40);
-
-    if (isFiring) {
-      ctx.fillStyle = 'rgba(255, 200, 50, 0.8)';
-      ctx.beginPath();
-      ctx.arc(cx, cy - 95, 12, 0, Math.PI * 2);
-      ctx.fill();
-    }
+  const bobX = Math.sin(time * 0.005) * 4;
+  const bobY = Math.abs(Math.cos(time * 0.005)) * 6;
+  const recoil = isFiring ? 24 : 0;
+  const cx = this.width / 2 + bobX;
+  const cy = this.height + bobY - recoil;
+  
+  if (this.weaponImg && this.weaponImg.complete) {
+    ctx.drawImage(this.weaponImg, cx - 32, cy - 64, 64, 64);
+  }
   }
 }
