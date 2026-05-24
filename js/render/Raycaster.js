@@ -6,11 +6,9 @@ export class Raycaster {
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.width = RENDER.numRays;
     this.height = Math.floor(this.width * 0.6);
-    
     this.canvas.width = this.width;
     this.canvas.height = this.height;
     this.ctx.imageSmoothingEnabled = false;
-    
     this.zBuffer = new Array(this.width).fill(0);
     this.weaponImg = weaponImg;
   }
@@ -20,7 +18,6 @@ export class Raycaster {
     const w = this.width;
     const h = this.height;
 
-    // Небо и пол
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, w, h / 2);
     ctx.fillStyle = '#05050a';
@@ -81,7 +78,6 @@ export class Raycaster {
         }
       }
 
-      // Calculate perpendicular distance
       if (side === 0) {
         dist = (mapX - player.x / RENDER.mapScale + (1 - stepX) / 2) / eyeX;
       } else {
@@ -98,10 +94,8 @@ export class Raycaster {
       let drawEnd = Math.floor(lineHeight / 2 + h / 2);
       if (drawEnd >= h) drawEnd = h - 1;
 
-      // Затенение
       const shade = Math.max(0.2, 1 - dist / RENDER.maxDepth);
       
-      // Цвет стены
       if (side === 0) {
         const r = Math.floor(110 * shade);
         const g = Math.floor(110 * shade);
@@ -117,19 +111,21 @@ export class Raycaster {
       ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
     }
 
-    // Оружие
     this._drawWeapon(ctx, time, player.isShooting);
   }
 
   _drawWeapon(ctx, time, isFiring) {
-  const bobX = Math.sin(time * 0.005) * 4;
-  const bobY = Math.abs(Math.cos(time * 0.005)) * 6;
-  const recoil = isFiring ? 24 : 0;
-  const cx = this.width / 2 + bobX;
-  const cy = this.height + bobY - recoil;
-  
-  if (this.weaponImg && this.weaponImg.complete) {
-    ctx.drawImage(this.weaponImg, cx - 32, cy - 64, 64, 64);
-  }
+    const bobX = Math.sin(time * 0.005) * 4;
+    const bobY = Math.abs(Math.cos(time * 0.005)) * 6;
+    const recoil = isFiring ? 24 : 0;
+    const cx = this.width / 2 + bobX;
+    const cy = this.height + bobY - recoil;
+    
+    if (this.weaponImg && this.weaponImg.complete) {
+      ctx.drawImage(this.weaponImg, cx - 32, cy - 64, 64, 64);
+    } else {
+      ctx.fillStyle = '#4a4a5a';
+      ctx.fillRect(cx - 12, cy - 60, 24, 50);
+    }
   }
 }
