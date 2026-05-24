@@ -13,12 +13,10 @@ import { WaveManager } from './core/WaveManager.js';
 import { Enemy3D } from './core/Enemy3D.js';
 import { MusicGenerator } from './audio/MusicGenerator.js';
 
-// DOM
 const loader = document.getElementById('loader');
 const music = new MusicGenerator();
 let currentScreen = 'menu';
 
-// Глобальные функции
 window.showScreen = function(screenName) {
   document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
   const target = document.getElementById('screen-' + screenName);
@@ -63,9 +61,18 @@ function startGame() {
   hasMachinegun = false;
   waveManager.startWave();
   updateHUD();
+  
+  // Установить размер canvas
+  if (canvas) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    raycaster.width = RENDER.numRays;
+    raycaster.height = Math.floor(RENDER.numRays * 0.6);
+    canvas.width = raycaster.width;
+    canvas.height = raycaster.height;
+  }
 }
 
-// Инициализация
 const canvas = document.getElementById('game');
 const raycaster = new Raycaster(canvas);
 const input = new InputManager();
