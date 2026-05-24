@@ -1,249 +1,108 @@
 :root {
-  --bg: #0f0f1a;
-  --hud-bg: rgba(26, 26, 46, 0.85);
+  --bg: #0f172a;
+  --hud-bg: rgba(15, 23, 42, 0.85);
   --accent: #e94560;
   --text: #f0f0f0;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { 
-  height: 100dvh; 
+  width: 100%; height: 100%; 
   overflow: hidden; 
-  background: var(--bg); 
+  background: #000; 
   color: var(--text); 
-  font-family: system-ui, monospace;
-  touch-action: none; /* Отключаем зум/скролл для игры */
-}
-
-/* Загрузочный экран в стиле ретро */
-.loader {
-  position: fixed; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  background: #000;
-  z-index: 1000;
-  transition: opacity 0.4s ease;
-}
-.loader.hidden { opacity: 0; pointer-events: none; }
-.loader__bar {
-  width: 200px; height: 4px;
-  background: #333; border-radius: 2px;
-  overflow: hidden; margin-bottom: 16px;
-}
-.loader__bar::after {
-  content: '';
-  display: block; width: 30%; height: 100%;
-  background: var(--accent);
-  animation: load 1.2s infinite ease-in-out;
-}
-@keyframes load {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(330%); }
+  font-family: 'Courier New', monospace;
+  touch-action: none;
 }
 
 /* Канвас на весь экран */
 .game-canvas {
   display: block;
-  width: 100vw; height: 100dvh;
-  image-rendering: pixelated; /* Чёткий пиксель-арт */
+  width: 100vw; height: 100vh;
+  image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
 /* UI слой */
-.ui {
-  position: fixed; inset: 0;
-  pointer-events: none; /* Пропускаем клики сквозь UI на канвас */
-  z-index: 10;
-}
+.ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
 .ui.hidden { display: none; }
 
 .hud {
-  position: absolute; top: 16px; left: 16px; right: 16px;
+  position: absolute; top: 8px; left: 8px; right: 8px;
   display: flex; justify-content: space-between;
-  padding: 8px 16px;
+  padding: 6px 12px;
   background: var(--hud-bg);
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 14px;
+  border-radius: 6px;
+  font-weight: bold; font-size: 13px;
   pointer-events: auto;
 }
 
-/* Виртуальный джойстик */
+/* Джойстик и кнопка */
 .joystick {
-  position: absolute; bottom: calc(24px + var(--safe-bottom)); left: 24px;
-  width: 100px; height: 100px;
-  pointer-events: auto;
+  position: absolute; bottom: 24px; left: 24px;
+  width: 90px; height: 90px; pointer-events: auto;
 }
 .joystick__base {
   position: absolute; inset: 0;
-  border: 3px solid rgba(233, 69, 96, 0.5);
-  border-radius: 50%;
-  background: rgba(26, 26, 46, 0.6);
+  border: 2px solid rgba(233, 69, 96, 0.4);
+  border-radius: 50%; background: rgba(15, 23, 42, 0.6);
 }
 .joystick__stick {
   position: absolute; top: 50%; left: 50%;
-  width: 40px; height: 40px;
-  background: var(--accent);
-  border-radius: 50%;
+  width: 36px; height: 36px;
+  background: var(--accent); border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: transform 0.05s ease-out;
 }
-
-/* Кнопка стрельбы */
 .btn-shoot {
-  position: absolute; bottom: calc(24px + var(--safe-bottom)); right: 24px;
-  width: 72px; height: 72px;
-  border: none; border-radius: 50%;
+  position: absolute; bottom: 24px; right: 24px;
+  width: 64px; height: 64px; border: none; border-radius: 50%;
   background: radial-gradient(circle, #ff6b6b, #c0392b);
-  color: white; font-size: 28px;
-  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.6);
-  pointer-events: auto;
-  touch-action: manipulation;
-  transition: transform 0.05s;
+  color: white; font-size: 24px;
+  box-shadow: 0 4px 16px rgba(233, 69, 96, 0.5);
+  pointer-events: auto; touch-action: manipulation;
 }
-.btn-shoot:active { transform: scale(0.92); }
 
-/* Модальное окно */
+/* Модалки */
 .modal {
-  border: none; background: rgba(15, 15, 26, 0.95);
-  color: var(--text); border-radius: 12px;
-  padding: 24px; max-width: 90vw;
-  backdrop-filter: blur(8px);
-  pointer-events: auto;
+  border: none; background: rgba(10, 10, 20, 0.95);
+  color: var(--text); border-radius: 10px;
+  padding: 20px; max-width: 90vw;
+  backdrop-filter: blur(6px); pointer-events: auto;
 }
-.modal::backdrop { background: rgba(0,0,0,0.7); }
+.modal::backdrop { background: rgba(0,0,0,0.8); }
 .modal__content { text-align: center; }
-.modal__content h2 { color: var(--accent); margin-bottom: 12px; }
-.modal__content p { margin: 8px 0 20px; color: #aaa; }
+.accent-text { color: var(--accent); margin-bottom: 12px; }
+.shop-balance { color: #fbbf24; margin: 8px 0; }
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.shop-item {
+  background: #1a1a2e; border: 1px solid #333; border-radius: 6px;
+  padding: 8px; display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; color: white; font-size: 12px;
+}
+.shop-item:disabled { opacity: 0.4; cursor: not-allowed; }
+.shop-icon { font-size: 20px; margin-bottom: 2px; }
+.shop-price { color: #fbbf24; font-weight: bold; margin-top: 4px; }
 .btn {
-  min-width: 120px; min-height: 48px;
-  margin: 4px; padding: 0 20px;
-  border: none; border-radius: 8px;
-  background: #333; color: white;
-  font: inherit; font-weight: bold;
-  cursor: pointer; transition: background 0.2s;
+  min-width: 100px; min-height: 40px; margin: 4px; padding: 0 16px;
+  border: none; border-radius: 6px; background: #333; color: white;
+  font: inherit; font-weight: bold; cursor: pointer;
 }
 .btn--primary { background: var(--accent); }
-.btn--primary:hover { background: #ff5272; }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Адаптив: на десктопе скрываем тач-контролы */
-@media (min-width: 768px) and (hover: hover) {
-  .joystick, .btn-shoot { display: none; }
-}
-/* Магазин */
-.shop-modal { max-width: 320px; }
-.shop-balance { font-size: 1.2rem; color: #fbbf24; margin-bottom: 16px; }
-.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-.shop-item {
-  background: #1a1a2e; border: 1px solid #333; border-radius: 8px;
-  padding: 10px; display: flex; flex-direction: column; align-items: center;
-  cursor: pointer; color: white; transition: 0.2s;
-}
-.shop-item:active { transform: scale(0.95); background: #2a2a4e; }
-.shop-item:disabled { opacity: 0.4; cursor: not-allowed; }
-.shop-icon { font-size: 24px; margin-bottom: 4px; }
-.shop-desc { font-size: 12px; margin-bottom: 4px; }
-.shop-price { color: #fbbf24; font-weight: bold; font-size: 11px; }
-.accent-text { color: #e94560; text-shadow: 0 0 10px rgba(233, 69, 96, 0.5); }
 .big-score { font-size: 2rem; font-weight: bold; display: block; margin: 8px 0; }
 .highscore { color: #4ade80; font-weight: bold; }
 
-/* Улучшенный лоадер */
+/* Лоадер */
 .loader {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #0a0a14;
-  z-index: 1000;
-  transition: opacity 0.5s ease;
-  font-family: 'Courier New', monospace;
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: #0a0a14;
+  z-index: 1000; transition: opacity 0.4s ease; font-family: monospace;
 }
-
-.loader.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.loader__title {
-  font-size: 32px;
-  font-weight: bold;
-  color: #ef4444;
-  margin-bottom: 24px;
-  text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
-  animation: pulse 1.5s infinite;
-}
-
-.loader__bar {
-  width: 280px;
-  height: 6px;
-  background: #1e293b;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-
-.loader__progress {
-  height: 100%;
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-  width: 0%;
-  transition: width 0.3s ease;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
-}
-
-.loader__status {
-  color: #94a3b8;
-  font-size: 14px;
-  margin-bottom: 12px;
-}
-
-.loader__modules {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 200px;
-  overflow: hidden;
-}
-
-.loader__module {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #64748b;
-  opacity: 0;
-  animation: fadeIn 0.3s forwards;
-}
-
-.loader__module.ok {
-  color: #22c55e;
-}
-
-.loader__module.error {
-  color: #ef4444;
-}
-
-.loader__module::before {
-  content: '○';
-  font-size: 10px;
-}
-
-.loader__module.ok::before {
-  content: '✓';
-}
-
-.loader__module.error::before {
-  content: '✗';
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
-}
-
-@keyframes fadeIn {
-  to { opacity: 1; }
-}
+.loader.hidden { opacity: 0; pointer-events: none; }
+.loader__title { font-size: 28px; font-weight: bold; color: #ef4444; margin-bottom: 20px; text-shadow: 0 0 15px rgba(239,68,68,0.6); }
+.loader__bar { width: 240px; height: 5px; background: #1e293b; border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.loader__progress { height: 100%; background: linear-gradient(90deg, #22c55e, #16a34a); width: 0%; transition: width 0.2s ease; }
+.loader__status { color: #94a3b8; font-size: 13px; margin-bottom: 10px; }
+.loader__modules { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow: hidden; }
+.loader__module { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #64748b; opacity: 0; animation: fadeIn 0.2s forwards; }
+.loader__module.ok { color: #22c55e; }
+.loader__module.ok::before { content: '✓'; font-size: 10px; }
+@keyframes fadeIn { to { opacity: 1; } }
