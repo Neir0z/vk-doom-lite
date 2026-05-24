@@ -7,6 +7,7 @@ import { WaveManager } from './core/WaveManager.js';
 import { Enemy3D } from './core/Enemy3D.js';
 import { Weapon } from './core/Weapon.js';
 import { Minimap } from './render/Minimap.js';
+import { TextureLoader } from './render/TextureLoader.js';
 
 async function bootstrap() {
   // 1. Инициализация ядра
@@ -14,18 +15,19 @@ async function bootstrap() {
   const raycaster = new Raycaster(canvas);
   const input = new InputManager();
   const audio = new SoundManager();
+  const texLoader = new TextureLoader();
 
   document.addEventListener('pointerdown', () => audio.init(), { once: true });
   
   // 2. Игровые объекты
   const player = new Player(7.5 * RENDER.mapScale, 4.5 * RENDER.mapScale);
-  const weapon = new Weapon('pistol');
-  const minimap = new Minimap();
+  const weapon = new Weapon('pistol', player); // ✅ Ссылка на игрока для патронов
+  const minimap = new Minimap(); // ✅ Уменьшенная миникарта 80×80
   const enemies = [];
   const particles = [];
   
   // 3. Состояние игры
-  let gameState = 'playing'; // playing, shop, gameover
+  let gameState = 'playing';
   let damageFlash = 0;
   let stepTimer = 0;
   let currentWeapon = 'pistol';
@@ -56,7 +58,8 @@ async function bootstrap() {
       if (data.keys?.[0]) highScore = parseInt(data.keys[0].value) || 0;
     }
   } catch {}
-  document.getElementById('highscore-display').textContent = highScore;
+  const highscoreEl = document.getElementById('highscore-display');
+  if (highscoreEl) highscoreEl.textContent = highScore;
 
   // 6. Вспомогательные функции
   function updateHUD() {
@@ -87,7 +90,34 @@ async function bootstrap() {
   }
   window.addEventListener('keydown', handleWeaponSwitch);
 
-  // 7. Управление волнами и спавном
+  // 7. Загрузка ассетов (текстуры)
+  const TEXTURE_URLS = {
+    wall: 'assets/wall.png',
+    enemy_grunt: 'assets/enemy_grunt_sheet.png',
+    enemy_fast: 'assets/enemy_fast_sheet.png',
+    enemy_tank: 'assets/enemy_tank_sheet.png',
+    enemy_boss: 'assets/enemy_boss_sheet.png',
+  };
+
+  async function loadAssets() {
+    try {
+      await Promise.all([
+        texLoader.loadImage(TEXTURE_URLS.wall, 'wall'),
+        texLoader.loadSpriteSheet(TEXTURE_URLS.enemy_grunt, 'enemy_grunt', 64, 64, 4),
+        texLoader.loadSpriteSheet(TEXTURE_URLS.enemy_fast, 'enemy_fast', 64, 64, 4),
+        texLoader.loadSpriteSheet(TEXTURE_URLS.enemy_tank, 'enemy_tank', 64, 64, 4),
+        texLoader.loadSpriteSheet(TEXTURE_URLS.enemy_boss, 'enemy_boss', 128, 128, 4),
+      ]);
+      texLoader.loaded = true;
+      console.log('✅ Custom textures loaded');
+    } catch (e) {
+      console.warn('⚠️ Using placeholder textures (assets not found)');
+      texLoader.loaded = true;
+    }
+  }
+  loadAssets(); // Запускаем загрузку фоном
+
+  // 8. Управление волнами и спавном
   const waveManager = new WaveManager(() => {
     let mx, my, attempts = 0;
     do {
@@ -97,23 +127,23 @@ async function bootstrap() {
     } while ((MAP[my][mx] !== 0 || Math.hypot(mx * RENDER.mapScale - player.x, my * RENDER.mapScale - player.y) < 200) && attempts < 100);
 
     if (attempts < 100) {
-      let type = ENEMY_TYPES.grunt;
+      let typeKey = 'grunt';
       const w = waveManager.wave;
       
       // Босс каждые 5 волн
       if (w > 0 && w % WAVES.bossEvery === 0 && enemies.filter(e => e.active && e.isBoss).length === 0) {
-        type = ENEMY_TYPES.boss;
+        typeKey = 'boss';
       } else if (w > 3) {
-        // Случайные улучшенные враги
         const rand = Math.random();
-        type = rand > 0.7 ? ENEMY_TYPES.tank : (rand > 0.4 ? ENEMY_TYPES.fast : ENEMY_TYPES.grunt);
+        typeKey = rand > 0.7 ? 'tank' : (rand > 0.4 ? 'fast' : 'grunt');
       }
       
-      enemies.push(new Enemy3D(mx * RENDER.mapScale, my * RENDER.mapScale, type.key || 'grunt'));
+      // ✅ Передаём texLoader для загрузки спрайтов
+      enemies.push(new Enemy3D(mx * RENDER.mapScale, my * RENDER.mapScale, typeKey, texLoader));
     }
   });
 
-  // 8. Магазин
+  // 9. Магазин
   function openShop() {
     gameState = 'shop';
     ui.shopMoney.textContent = player.score;
@@ -123,7 +153,7 @@ async function bootstrap() {
     ui.btnAmmo.disabled = player.score < SHOP.ammoCost;
 
     // Динамические кнопки оружия
-    document.querySelectorAll('.shop-weapon-btn').forEach(b => b.remove());
+    document.querySelectorAll('.shop-weapon-btn').forEach(b => b?.remove());
     const shopContent = ui.shopModal.querySelector('.modal__content');
 
     if (!hasShotgun && player.score >= SHOP.shotgunCost) {
@@ -137,7 +167,7 @@ async function bootstrap() {
           audio.playPickup(); openShop();
         }
       };
-      shopContent.insertBefore(btn, ui.btnNext);
+      shopContent?.insertBefore(btn, ui.btnNext);
     }
     if (!hasMachinegun && player.score >= SHOP.machinegunCost) {
       const btn = document.createElement('button');
@@ -150,7 +180,7 @@ async function bootstrap() {
           audio.playPickup(); openShop();
         }
       };
-      shopContent.insertBefore(btn, ui.btnNext);
+      shopContent?.insertBefore(btn, ui.btnNext);
     }
   }
 
@@ -181,9 +211,9 @@ async function bootstrap() {
   ui.btnNext.addEventListener('click', closeShop);
   ui.btnRestart.addEventListener('click', () => location.reload());
 
-  // 9. Стрельба (Raycast + Spread + Pellets)
+  // 10. Стрельба (Raycast + Spread + Pellets)
   function shootRaycast() {
-    const stats = weapon.shoot();
+    const stats = weapon.shoot(); // ✅ Здесь списываются патроны!
     if (!stats) return;
 
     // Звук
@@ -239,22 +269,23 @@ async function bootstrap() {
 
   async function endGame() {
     gameState = 'gameover';
-    document.getElementById('final-wave').textContent = waveManager.wave;
+    const finalWaveEl = document.getElementById('final-wave');
+    if (finalWaveEl) finalWaveEl.textContent = waveManager.wave;
     ui.overModal.showModal();
     
     if (player.score > highScore) {
       highScore = player.score;
-      document.getElementById('highscore-display').textContent = highScore;
+      if (highscoreEl) highscoreEl.textContent = highScore;
       try {
         if (window.vkBridge) await window.vkBridge.send('VKWebAppStorageSet', { key: 'doom_highscore', value: highScore.toString() });
       } catch {}
     }
   }
 
-  // 10. Главный цикл
+  // 11. Главный цикл
   let lastTime = 0;
   function gameLoop(timestamp) {
-    const dt = Math.min((timestamp - lastTime) / 1000, 0.04); // Стабилизация физики
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.04);
     lastTime = timestamp;
 
     if (gameState === 'playing') {
@@ -278,13 +309,14 @@ async function bootstrap() {
         stepTimer = Math.max(stepTimer - dt, 0.1);
       }
 
-      // Обновление врагов
+      // Обновление врагов + ✅ НАНЕСЕНИЕ УРОНА ИГРОКУ
       const activeEnemies = [];
       for (const enemy of enemies) {
         if (enemy.active) {
           if (enemy.update(dt, player)) {
             damageFlash = 1.0;
             audio.playHurt();
+            player.takeDamage(enemy.damage); // ✅ Вот где отнимается здоровье!
           }
           activeEnemies.push(enemy);
         }
@@ -309,7 +341,10 @@ async function bootstrap() {
         openShop();
       }
 
-      if (player.health <= 0) endGame();
+      // ✅ Проверка смерти (после нанесения урона)
+      if (player.health <= 0 && gameState === 'playing') {
+        endGame();
+      }
     }
 
     // --- РЕНДЕРИНГ ---
@@ -317,7 +352,9 @@ async function bootstrap() {
     raycaster.render(timestamp, player);
 
     // Спрайты врагов (сортировка от дальнего к ближнему)
-    enemies.sort((a, b) => Math.hypot(b.x-player.x, b.y-player.y) - Math.hypot(a.x-player.x, a.y-player.y));
+    enemies.sort((a, b) => 
+      Math.hypot(b.x - player.x, b.y - player.y) - Math.hypot(a.x - player.x, a.y - player.y)
+    );
     for (const enemy of enemies) {
       if (enemy.active) enemy.draw(ctx, player);
     }
@@ -344,7 +381,7 @@ async function bootstrap() {
     }
     ctx.globalAlpha = 1;
 
-    // Миникарта
+    // ✅ Миникарта (80×80, с игроком)
     minimap.draw(ctx, player, enemies);
 
     // Текст оружия
@@ -370,7 +407,7 @@ async function bootstrap() {
     document.getElementById('loader').classList.add('hidden');
     document.getElementById('ui').classList.remove('hidden');
     requestAnimationFrame(gameLoop);
-    console.log(`🎮 DOOM-LITE v${GAME.version} | POLISHED & LOADED`);
+    console.log(`🎮 DOOM-LITE v${GAME.version} | HEALTH/AMMO FIXED, MINIMAP 80px, TEXTURE LOADER`);
   }, 800);
 }
 
