@@ -72,20 +72,40 @@ function startGame() {
   gameStarted = true;
   currentScreen = 'game';
   
-  // Показать canvas
+  // Скрыть меню, показать canvas и UI
+  const menu = document.getElementById('screen-menu');
+  if (menu) {
+    menu.classList.add('hidden');
+    menu.style.display = 'none';
+  }
+  
   if (canvas) {
     canvas.style.display = 'block';
-    canvas.style.visibility = 'visible';
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
     canvas.style.zIndex = '1';
   }
   
-  // Показать UI
   const ui = document.getElementById('ui');
   if (ui) {
-    ui.classList.remove('hidden');
     ui.style.display = 'block';
+    ui.style.position = 'fixed';
+    ui.style.top = '0';
+    ui.style.left = '0';
+    ui.style.width = '100vw';
+    ui.style.height = '100vh';
     ui.style.zIndex = '10';
+    ui.style.pointerEvents = 'none';
   }
+  
+  // Элементы управления должны быть кликабельны
+  const joystick = document.getElementById('joystick');
+  const btnShoot = document.getElementById('btn-shoot');
+  if (joystick) joystick.style.pointerEvents = 'auto';
+  if (btnShoot) btnShoot.style.pointerEvents = 'auto';
   
   music.play();
   enemies.length = 0;
@@ -101,7 +121,7 @@ function startGame() {
   hasMachinegun = false;
   waveManager.startWave();
   updateHUD();
-  console.log('✅ Game running!');
+  console.log('✅ Game running! Canvas:', canvas ? 'visible' : 'null');
 }
 
 const raycaster = new Raycaster(canvas);
