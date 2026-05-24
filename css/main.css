@@ -106,3 +106,26 @@ html, body {
 .loader__module.ok { color: #22c55e; }
 .loader__module.ok::before { content: '✓'; font-size: 10px; }
 @keyframes fadeIn { to { opacity: 1; } }
+
+.menu {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, #1a1a2e 0%, #05050a 100%);
+  z-index: 50; transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.menu.hidden { opacity: 0; pointer-events: none; transform: translateY(30px); }
+.menu__title {
+  font-size: clamp(36px, 9vw, 72px); color: #ef4444;
+  text-shadow: 0 0 25px rgba(239,68,68,0.7); margin-bottom: 50px;
+  animation: titlePulse 3s ease-in-out infinite;
+}
+@keyframes titlePulse { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+.menu__buttons { display:flex; flex-direction:column; gap:14px; width:min(320px,85vw); }
+.menu__btn {
+  width:100%; padding:16px; background:rgba(30,41,59,0.9);
+  border:1px solid #334155; border-radius:10px; color:#f8fafc;
+  font:inherit; font-weight:700; font-size:17px; cursor:pointer;
+  transition:all 0.2s;
+}
+.menu__btn:hover { background:#ef4444; border-color:#ef4444; transform:scale(1.03); }
+.menu__btn:active { transform:scale(0.97); }
