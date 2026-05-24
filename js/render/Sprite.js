@@ -13,9 +13,10 @@ export class Sprite {
 
     const dx = this.x - player.x;
     const dy = this.y - player.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dist = Math.sqrt(dx * dx + dy * dy); // Дистанция в пикселях
     
-    if (dist > 20 || dist < 0.1) return;
+    // Видимость: если слишком далеко или слишком близко (за спиной)
+    if (dist > 1200 || dist < 10) return; // 1200px ~ 18 клеток
 
     const spriteAngle = Math.atan2(dy, dx) - player.angle;
     let angle = spriteAngle;
@@ -24,8 +25,8 @@ export class Sprite {
 
     if (Math.abs(angle) > Math.PI / 2.5) return;
 
-    // Размер на экране (увеличили коэффициент)
-    const screenH = (320 / dist) * 1.5;
+    // Размер спрайта
+    const screenH = (320 / (dist / 64)) * 1.5; // Масштабируем относительно клетки
     const screenW = screenH * (this.width / this.height);
     
     const screenX = (0.5 + angle / (Math.PI / 3)) * 320;
@@ -34,23 +35,22 @@ export class Sprite {
     const drawX = Math.floor(screenX - screenW / 2);
     const drawY = Math.floor(screenY - screenH / 2);
 
-    // Z-buffer проверка
+    // ✅ ПРОВЕРКА Z-BUFFER (теперь единицы совпадают: пиксели vs пиксели)
     const bufferIndex = Math.floor(screenX);
     if (bufferIndex >= 0 && bufferIndex < zBuffer.length) {
-      if (dist > zBuffer[bufferIndex]) return;
+      if (dist > zBuffer[bufferIndex]) return; // Стена ближе спрайта
     }
 
-    // Рисуем спрайт
+    // Рисуем
     if (this.texture) {
       ctx.drawImage(this.texture, drawX, drawY, screenW, screenH);
     } else {
-      // Красный круг-враг
+      // Красный шар-заглушка
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.arc(screenX, screenY, screenW / 2, 0, Math.PI * 2);
       ctx.fill();
       
-      // Глаза
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(screenX - screenW/6, screenY - screenH/8, screenW/8, 0, Math.PI * 2);
