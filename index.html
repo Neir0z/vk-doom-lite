@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#1a1a2e">
+  <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>DOOM-LITE | VK Games</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="DOOM-LITE: Ретро-шутер от первого лица">
+  <title>DOOM-LITE</title>
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-  <!-- Улучшенный лоадер -->
+
+  <!-- Загрузочный экран -->
   <div id="loader" class="loader">
     <div class="loader__title">DOOM-LITE</div>
     <div class="loader__bar"><div class="loader__progress"></div></div>
@@ -17,27 +20,44 @@
     <div id="loader__modules" class="loader__modules"></div>
   </div>
 
+  <!-- Главное меню -->
+  <div id="menu" class="menu hidden">
+    <h1 class="menu__title">DOOM-LITE</h1>
+    <div class="menu__buttons">
+      <button id="btn-new-game" class="menu__btn">🎮 Новая игра</button>
+      <button id="btn-menu-shop" class="menu__btn">🛒 Магазин</button>
+      <button id="btn-rules" class="menu__btn">📜 Правила</button>
+      <button id="btn-support" class="menu__btn">📧 Техподдержка</button>
+      <button id="btn-exit" class="menu__btn">🚪 Выход</button>
+    </div>
+  </div>
+
+  <!-- Игровой канвас -->
   <canvas id="game" class="game-canvas"></canvas>
 
+  <!-- Игровой интерфейс (HUD + Контролы + Модалки) -->
   <div id="ui" class="ui hidden">
-    <div class="hud">
+    <header class="hud">
       <div class="hud__stat">❤️ <span id="hud-health">100</span></div>
       <div class="hud__stat">🔫 <span id="hud-ammo">30</span></div>
       <div class="hud__stat" style="color:#fbbf24">💰 <span id="hud-money">0</span></div>
       <div class="hud__stat">🌊 <span id="hud-wave">1</span></div>
-    </div>
-    
+    </header>
+
+    <!-- Виртуальный джойстик -->
     <div id="joystick" class="joystick">
       <div class="joystick__base"></div>
       <div class="joystick__stick"></div>
     </div>
+    
+    <!-- Кнопка стрельбы -->
     <button id="btn-shoot" class="btn-shoot">🔥</button>
 
+    <!-- Магазин (между волнами) -->
     <dialog id="modal-shop" class="modal shop-modal">
       <div class="modal__content">
         <h2 class="accent-text">ВОЛНА ПРОЙДЕНА</h2>
         <p class="shop-balance">Доступно: <span id="shop-money">0</span> 💰</p>
-        
         <div class="shop-grid">
           <button id="btn-buy-health" class="shop-item">
             <span class="shop-icon">❤️</span>
@@ -50,13 +70,11 @@
             <span class="shop-price">30 💰</span>
           </button>
         </div>
-
-        <button id="btn-next-wave" class="btn btn--primary" style="margin-top: 20px; width: 100%;">
-          СЛЕДУЮЩАЯ ВОЛНА 
-        </button>
+        <button id="btn-next-wave" class="btn btn--primary" style="margin-top: 16px; width: 100%;">СЛЕДУЮЩАЯ ВОЛНА</button>
       </div>
     </dialog>
 
+    <!-- Game Over -->
     <dialog id="modal-over" class="modal">
       <div class="modal__content">
         <h2 class="accent-text">GAME OVER</h2>
@@ -65,8 +83,21 @@
         <button id="btn-restart" class="btn btn--primary">🔄 В БОЙ</button>
       </div>
     </dialog>
+
+    <!-- Правила -->
+    <dialog id="modal-rules" class="modal">
+      <div class="modal__content">
+        <h3 class="accent-text">📜 Правила игры</h3>
+        <p>WASD / Джойстик — движение и поворот</p>
+        <p>Пробел / 🔥 — стрельба</p>
+        <p>1, 2, 3 — смена оружия</p>
+        <p>Выживай волны, собирай монеты, покупай улучшения.</p>
+        <button id="btn-close-rules" class="btn btn--primary" style="margin-top: 12px;">Закрыть</button>
+      </div>
+    </dialog>
   </div>
 
+  <!-- Подключение скриптов -->
   <script src="lib/vk-bridge.min.js"></script>
   <script type="module" src="js/main.js"></script>
   <script>
