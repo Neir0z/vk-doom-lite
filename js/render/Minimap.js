@@ -2,27 +2,27 @@ import { MAP, RENDER } from '../config.js';
 
 export class Minimap {
   constructor() {
-    this.size = 80; // ✅ Уменьшили с 120 до 80
-    this.scale = this.size / (MAP[0].length * RENDER.mapScale);
+    this.size = 50; // ✅ Уменьшил до 50px
+    this.padding = 5;
+    // Масштаб относительно внутреннего разрешения канваса (320x192)
+    this.scale = this.size / (MAP[0].length * RENDER.mapScale) * (320 / 15); 
   }
 
   draw(ctx, player, enemies) {
-    const padding = 8;
-    const x = ctx.canvas.width - this.size - padding;
-    const y = padding;
+    const x = ctx.canvas.width - this.size - this.padding;
+    const y = this.padding;
 
-    // Полупрозрачный фон
-    ctx.fillStyle = 'rgba(10, 10, 26, 0.85)';
+    ctx.fillStyle = 'rgba(10, 10, 20, 0.7)';
     ctx.fillRect(x, y, this.size, this.size);
 
     // Стены
     ctx.fillStyle = '#3a3a5c';
-    for (let row = 0; row < MAP.length; row++) {
-      for (let col = 0; col < MAP[row].length; col++) {
-        if (MAP[row][col] === 1) {
+    for (let r = 0; r < MAP.length; r++) {
+      for (let c = 0; c < MAP[r].length; c++) {
+        if (MAP[r][c] === 1) {
           ctx.fillRect(
-            x + col * RENDER.mapScale * this.scale,
-            y + row * RENDER.mapScale * this.scale,
+            x + c * RENDER.mapScale * this.scale,
+            y + r * RENDER.mapScale * this.scale,
             RENDER.mapScale * this.scale,
             RENDER.mapScale * this.scale
           );
@@ -30,41 +30,35 @@ export class Minimap {
       }
     }
 
-    // Враги (маленькие красные точки)
+    // Враги
     ctx.fillStyle = '#ef4444';
-    for (const enemy of enemies) {
-      if (enemy.active) {
-        const ex = x + (enemy.x * this.scale);
-        const ey = y + (enemy.y * this.scale);
+    for (const e of enemies) {
+      if (e.active) {
+        const ex = x + (e.x * this.scale);
+        const ey = y + (e.y * this.scale);
         ctx.beginPath();
-        ctx.arc(ex, ey, enemy.isBoss ? 4 : 2, 0, Math.PI * 2);
+        ctx.arc(ex, ey, e.isBoss ? 3 : 1.5, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // ✅ ИГРОК (зелёная стрелка с направлением)
+    // Игрок
     const px = x + (player.x * this.scale);
     const py = y + (player.y * this.scale);
-    
-    // Тело игрока
     ctx.fillStyle = '#22c55e';
     ctx.beginPath();
-    ctx.arc(px, py, 4, 0, Math.PI * 2);
+    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
     ctx.fill();
     
-    // Стрелка направления
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(px, py);
-    ctx.lineTo(
-      px + Math.cos(player.angle) * 8,
-      py + Math.sin(player.angle) * 8
-    );
+    ctx.lineTo(px + Math.cos(player.angle) * 5, py + Math.sin(player.angle) * 5);
     ctx.stroke();
 
     // Рамка
-    ctx.strokeStyle = '#666';
+    ctx.strokeStyle = '#555';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, this.size, this.size);
   }
