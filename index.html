@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>DOOM-LITE | VK Games</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <!-- Загрузочный экран -->
+  <div id="loader" class="loader">
+    <div class="loader__bar"></div>
+    <p>ЗАГРУЗКА АРСЕНАЛА...</p>
+  </div>
+
+  <!-- Игровой канвас -->
+  <canvas id="game" class="game-canvas"></canvas>
+
+  <!-- UI поверх игры -->
+  <div id="ui" class="ui hidden">
+    <div class="hud">
+      <span id="hud-health">❤️ 100</span>
+      <span id="hud-ammo">🔫 30</span>
+      <span id="hud-score">💀 0</span>
+    </div>
+    
+    <!-- Виртуальный джойстик для мобильных -->
+    <div id="joystick" class="joystick">
+      <div class="joystick__base"></div>
+      <div class="joystick__stick"></div>
+    </div>
+    
+    <!-- Кнопка стрельбы -->
+    <button id="btn-shoot" class="btn-shoot" aria-label="Стрелять">🔥</button>
+    
+    <!-- Меню паузы / геймовер -->
+    <dialog id="modal-menu" class="modal">
+      <div class="modal__content">
+        <h2 id="modal-title">ПАУЗА</h2>
+        <p id="modal-score">Счёт: 0</p>
+        <button id="btn-restart" class="btn btn--primary">🔄 Заново</button>
+        <button id="btn-resume" class="btn btn--secondary">▶️ Продолжить</button>
+      </div>
+    </dialog>
+  </div>
+
+  <script src="lib/vk-bridge.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

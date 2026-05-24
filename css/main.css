@@ -1,0 +1,133 @@
+:root {
+  --bg: #0f0f1a;
+  --hud-bg: rgba(26, 26, 46, 0.85);
+  --accent: #e94560;
+  --text: #f0f0f0;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { 
+  height: 100dvh; 
+  overflow: hidden; 
+  background: var(--bg); 
+  color: var(--text); 
+  font-family: system-ui, monospace;
+  touch-action: none; /* Отключаем зум/скролл для игры */
+}
+
+/* Загрузочный экран в стиле ретро */
+.loader {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: #000;
+  z-index: 1000;
+  transition: opacity 0.4s ease;
+}
+.loader.hidden { opacity: 0; pointer-events: none; }
+.loader__bar {
+  width: 200px; height: 4px;
+  background: #333; border-radius: 2px;
+  overflow: hidden; margin-bottom: 16px;
+}
+.loader__bar::after {
+  content: '';
+  display: block; width: 30%; height: 100%;
+  background: var(--accent);
+  animation: load 1.2s infinite ease-in-out;
+}
+@keyframes load {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(330%); }
+}
+
+/* Канвас на весь экран */
+.game-canvas {
+  display: block;
+  width: 100vw; height: 100dvh;
+  image-rendering: pixelated; /* Чёткий пиксель-арт */
+  image-rendering: crisp-edges;
+}
+
+/* UI слой */
+.ui {
+  position: fixed; inset: 0;
+  pointer-events: none; /* Пропускаем клики сквозь UI на канвас */
+  z-index: 10;
+}
+.ui.hidden { display: none; }
+
+.hud {
+  position: absolute; top: 16px; left: 16px; right: 16px;
+  display: flex; justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--hud-bg);
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+  pointer-events: auto;
+}
+
+/* Виртуальный джойстик */
+.joystick {
+  position: absolute; bottom: calc(24px + var(--safe-bottom)); left: 24px;
+  width: 100px; height: 100px;
+  pointer-events: auto;
+}
+.joystick__base {
+  position: absolute; inset: 0;
+  border: 3px solid rgba(233, 69, 96, 0.5);
+  border-radius: 50%;
+  background: rgba(26, 26, 46, 0.6);
+}
+.joystick__stick {
+  position: absolute; top: 50%; left: 50%;
+  width: 40px; height: 40px;
+  background: var(--accent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.05s ease-out;
+}
+
+/* Кнопка стрельбы */
+.btn-shoot {
+  position: absolute; bottom: calc(24px + var(--safe-bottom)); right: 24px;
+  width: 72px; height: 72px;
+  border: none; border-radius: 50%;
+  background: radial-gradient(circle, #ff6b6b, #c0392b);
+  color: white; font-size: 28px;
+  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.6);
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: transform 0.05s;
+}
+.btn-shoot:active { transform: scale(0.92); }
+
+/* Модальное окно */
+.modal {
+  border: none; background: rgba(15, 15, 26, 0.95);
+  color: var(--text); border-radius: 12px;
+  padding: 24px; max-width: 90vw;
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+.modal::backdrop { background: rgba(0,0,0,0.7); }
+.modal__content { text-align: center; }
+.modal__content h2 { color: var(--accent); margin-bottom: 12px; }
+.modal__content p { margin: 8px 0 20px; color: #aaa; }
+.btn {
+  min-width: 120px; min-height: 48px;
+  margin: 4px; padding: 0 20px;
+  border: none; border-radius: 8px;
+  background: #333; color: white;
+  font: inherit; font-weight: bold;
+  cursor: pointer; transition: background 0.2s;
+}
+.btn--primary { background: var(--accent); }
+.btn--primary:hover { background: #ff5272; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Адаптив: на десктопе скрываем тач-контролы */
+@media (min-width: 768px) and (hover: hover) {
+  .joystick, .btn-shoot { display: none; }
+}
