@@ -362,28 +362,71 @@ setTimeout(() => {
   showScreen('menu');
 }, 800);
 
-console.log('🎮 READY');
-// Принудительный запуск
-console.log('🔄 Forcing game loop start...');
-setTimeout(() => {
-  console.log('⏰ Timeout check - canvas:', canvas ? 'exists' : 'null');
-  console.log('⏰ gameStarted:', gameStarted);
-  console.log('⏰ currentScreen:', currentScreen);
-  
-  if (canvas && gameStarted) {
-    console.log('⏰ Manual render test...');
+// Принудительный запуск gameLoop
+console.log('🔄 Starting gameLoop...');
+let lastTime = 0;
+function gameLoop(ts) {
+  const dt = Math.min((ts-lastTime)/1000, 0.04);
+  lastTime = ts;
+
+  if(currentScreen==='game' && gameStarted) {
+    player.update(dt, input);
+    weapon.update(dt);
+    if(input.isShooting()) { shootRaycast(); input.resetShoot(); }
+    
+    const mv = input.getMovement();
+    if(Math.abs(mv.move)>0.1) { stepTimer+=dt; if(stepTimer>0.35){audio.playStep();stepTimer=0;} }
+    else stepTimer=Math.max(stepTimer-dt, 0.1);
+
+    const active=[];
+    for(const e of enemies) {
+      if(e.active) {
+        if(e.update(dt, player)) { damageFlash=1; audio.playHurt(); player.takeDamage(e.damage); }
+        active.push(e);
+      }
+    }
+    particles.update(dt);
+    if(damageFlash>0) damageFlash-=dt*4;
+    waveManager.update(dt);
+    updateHUD();
+    if(waveManager.checkWaveComplete(active.length)) openShop();
+    if(player.health<=0 && currentScreen==='game') endGame();
+  }
+
+  // Рендеринг
+  if (canvas) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = '#0f0';
-      ctx.fillRect(50, 50, 200, 150);
-      ctx.fillStyle = '#fff';
-      ctx.font = '16px monospace';
-      ctx.fillText('MANUAL TEST', 70, 90);
-      console.log('✅ Manual render done!');
-    } else {
-      console.error('❌ Cannot get context!');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      if(gameStarted) {
+        raycaster.render(ts, player, wallTex);
+        
+        enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+        for(const e of enemies) if(e.active) e.draw(ctx, player);
+        particles.draw(ctx);
+        
+        const cx=canvas.width/2, cy=canvas.height/2;
+        ctx.strokeStyle='#0f0'; ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
+        ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
+        ctx.stroke();
+
+        minimap.draw(ctx, player, enemies);
+
+        ctx.fillStyle='#fff'; ctx.font='bold 11px monospace';
+        ctx.fillText(WEAPONS[currentWeapon].name+' | '+player.ammo, 8, canvas.height-8);
+
+        if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,0.3)'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+      }
     }
-  } else {
-    console.error('❌ Canvas or gameStarted is false');
   }
-}, 2000);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Запустить цикл сразу
+requestAnimationFrame(gameLoop);
+console.log('✅ GameLoop started!');
