@@ -290,7 +290,9 @@ function gameLoop(ts) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     if(gameStarted) {
-      raycaster.render(ts, player, wallTex);
+      // Передаём состояние стрельбы
+      const isShooting = input.isShooting();
+      raycaster.render(ts, player, wallTex, isShooting);
       
       enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
       for(const e of enemies) if(e.active) e.draw(ctx, player);
