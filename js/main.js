@@ -1,94 +1,62 @@
-import { GAME, PLAYER, ENEMY, SHOP, WAVES } from './config.js';
+import { GAME, PLAYER, ENEMY, SHOP, WAVES, RENDER, MAP } from './config.js';
 import { InputManager } from './core/Input.js';
-import { TextureGenerator } from './render/Textures.js';
 import { Player } from './core/Player.js';
-import { World } from './core/World.js';
-import { Bullet } from './core/Bullet.js';
-import { Enemy } from './core/Enemy.js';
-import { ParticleSystem } from './core/ParticleSystem.js';
+import { Raycaster } from './render/Raycaster.js';
 import { SoundManager } from './audio/SoundManager.js';
 import { WaveManager } from './core/WaveManager.js';
 
 async function bootstrap() {
   const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d', { alpha: false });
-
-  // Настройка Canvas
-  const resize = () => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = `${window.innerWidth}px`;
-    canvas.style.height = `${window.innerHeight}px`;
-    ctx.scale(dpr, dpr);
-  };
-  window.addEventListener('resize', resize);
-  resize();
-
-  const textures = {
-    player: TextureGenerator.createPlayer(),
-    enemy: TextureGenerator.createEnemy(),
-    bullet: TextureGenerator.createBullet(),
-    wall: TextureGenerator.createWall('#3a3a5c', 'bricks'),
-  };
-
-  const input = new InputManager(canvas);
+  const raycaster = new Raycaster(canvas);
+  const input = new InputManager();
   const audio = new SoundManager();
+
   document.addEventListener('pointerdown', () => audio.init(), { once: true });
 
-  // Игровые объекты
-  const world = new World(window.innerWidth, window.innerHeight);
-  const player = new Player(window.innerWidth / 2, window.innerHeight / 2);
-  const bullets = [];
+  // Спавн игрока в безопасной точке (центр карты)
+  const player = new Player(7.5 * RENDER.mapScale, 4.5 * RENDER.mapScale);
   const enemies = [];
-  const particles = new ParticleSystem();
 
-  // Менеджер волн
   const waveManager = new WaveManager(() => {
-    // Спавн врага
-    let ex, ey;
+    let mx, my, attempts = 0;
     do {
-      ex = 50 + Math.random() * (window.innerWidth - 100);
-      ey = 50 + Math.random() * (window.innerHeight - 100);
-    } while (Math.hypot(ex - player.x, ey - player.y) < 200);
-    enemies.push(new Enemy(ex, ey));
+      mx = Math.floor(Math.random() * MAP[0].length);
+      my = Math.floor(Math.random() * MAP.length);
+      attempts++;
+    } while ((MAP[my][mx] !== 0 || Math.hypot(mx * RENDER.mapScale - player.x, my * RENDER.mapScale - player.y) < 150) && attempts < 50);
+
+    if (attempts < 50) {
+      enemies.push({ x: mx * RENDER.mapScale, y: my * RENDER.mapScale, active: true });
+    }
   });
 
-  // Состояние игры
-  let gameState = 'playing'; // playing, shop, gameover
-  let isFiring = false;
+  let gameState = 'playing';
 
-  // UI Элементы
   const ui = {
     health: document.getElementById('hud-health'),
     ammo: document.getElementById('hud-ammo'),
     money: document.getElementById('hud-money'),
     wave: document.getElementById('hud-wave'),
-    
     shopModal: document.getElementById('modal-shop'),
     shopMoney: document.getElementById('shop-money'),
     btnHealth: document.getElementById('btn-buy-health'),
     btnAmmo: document.getElementById('btn-buy-ammo'),
     btnNext: document.getElementById('btn-next-wave'),
-    
     overModal: document.getElementById('modal-over'),
     finalWave: document.getElementById('final-wave'),
-    highscore: document.getElementById('highscore-display'),
     btnRestart: document.getElementById('btn-restart')
   };
 
-  // --- VK Bridge: Загрузка рекорда ---
   let highScore = 0;
   try {
     if (window.vkBridge) {
-      const data = await window.vkBridge.send('VKWebAppStorageGet', { keys: ['doom_highscore'] });
-      if (data.keys && data.keys[0]) highScore = parseInt(data.keys[0].value) || 0;
+      const data = await window.vkBridge.send('VKWebAppStorageGet', { keys: [VK.storageKey] });
+      if (data.keys?.[0]) highScore = parseInt(data.keys[0].value) || 0;
     }
-  } catch (e) { console.warn('VK Load Error', e); }
-  ui.highscore.textContent = highScore;
+  } catch {}
 
-   function updateHUD() {
-    if (ui.health) ui.health.textContent = player.health;
+  function updateHUD() {
+    if (ui.health) ui.health.textContent = Math.floor(player.health);
     if (ui.ammo) ui.ammo.textContent = player.ammo;
     if (ui.money) ui.money.textContent = player.score;
     if (ui.wave) ui.wave.textContent = waveManager.wave;
@@ -104,16 +72,15 @@ async function bootstrap() {
     gameState = 'playing';
     ui.shopModal.close();
     waveManager.nextWave();
+    enemies.length = 0; // Очищаем массив врагов для новой волны
   }
 
-  // --- Обработчики Магазина ---
   ui.btnHealth.addEventListener('click', () => {
     if (player.score >= SHOP.healthCost) {
       player.score -= SHOP.healthCost;
       player.health = Math.min(100, player.health + SHOP.healthAmount);
-      updateHUD();
-      ui.shopMoney.textContent = player.score;
-      audio.playExplosion(); // Звук покупки
+      updateHUD(); ui.shopMoney.textContent = player.score;
+      audio.playExplosion();
     }
   });
 
@@ -121,15 +88,14 @@ async function bootstrap() {
     if (player.score >= SHOP.ammoCost) {
       player.score -= SHOP.ammoCost;
       player.addAmmo(SHOP.ammoAmount);
-      updateHUD();
-      ui.shopMoney.textContent = player.score;
+      updateHUD(); ui.shopMoney.textContent = player.score;
       audio.playExplosion();
     }
   });
 
   ui.btnNext.addEventListener('click', closeShop);
-  
-  // Обновляем доступность кнопок
+  ui.btnRestart.addEventListener('click', () => location.reload());
+
   setInterval(() => {
     if (gameState === 'shop') {
       ui.btnHealth.disabled = player.score < SHOP.healthCost;
@@ -137,137 +103,56 @@ async function bootstrap() {
     }
   }, 200);
 
-  ui.btnRestart.addEventListener('click', () => location.reload());
-
-  // --- Логика столкновений ---
-  function checkCollisions() {
-    // Пули vs Враги
-    for (let b = bullets.length - 1; b >= 0; b--) {
-      const bullet = bullets[b];
-      if (!bullet.active) continue;
-
-      for (let e = enemies.length - 1; e >= 0; e--) {
-        const enemy = enemies[e];
-        if (!enemy.active) continue;
-
-        if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < bullet.radius + enemy.radius) {
-          bullet.active = false;
-          audio.playExplosion();
-          
-          if (enemy.takeDamage(PLAYER.bulletDamage)) {
-            player.score += WAVES.rewardPerKill;
-            particles.emit(enemy.x, enemy.y, 15, '#ef4444', 100, 4);
-            enemies.splice(e, 1);
-          }
-          break;
-        }
-      }
-    }
-
-    // Враги vs Игрок
-    for (const enemy of enemies) {
-      if (!enemy.active) continue;
-      if (Math.hypot(player.x - enemy.x, player.y - enemy.y) < player.radius + enemy.radius) {
-        player.takeDamage(ENEMY.damage);
-        audio.playHurt();
-        canvas.classList.add('screen-shake');
-        setTimeout(() => canvas.classList.remove('screen-shake'), 100);
-        
-        if (player.health <= 0) endGame();
-      }
-    }
-  }
-
   async function endGame() {
     gameState = 'gameover';
     ui.finalWave.textContent = waveManager.wave;
     ui.overModal.showModal();
-
-    // Сохранение рекорда в VK
     if (player.score > highScore) {
       highScore = player.score;
-      ui.highscore.textContent = highScore;
       try {
-        if (window.vkBridge) {
-          await window.vkBridge.send('VKWebAppStorageSet', { key: 'doom_highscore', value: highScore.toString() });
-        }
-      } catch (e) { console.warn('VK Save Error', e); }
+        if (window.vkBridge) await window.vkBridge.send('VKWebAppStorageSet', { key: VK.storageKey, value: highScore.toString() });
+      } catch {}
     }
   }
 
-  // --- ГЛАВНЫЙ ЦИКЛ ---
   let lastTime = 0;
   function gameLoop(timestamp) {
     const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
     lastTime = timestamp;
 
     if (gameState === 'playing') {
-      player.update(dt, input, world);
-      
+      player.update(dt, input);
+
       if (input.isShooting()) {
-        const bulletData = player.shoot();
-        if (bulletData) {
-          bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.angle));
-          particles.emit(bulletData.x, bulletData.y, 5, '#fbbf24', 80, 3, Math.PI / 4);
+        const data = player.shoot();
+        if (data) {
           audio.playShoot();
-          isFiring = true;
-          setTimeout(() => isFiring = false, 60);
+          // Логика попадание будет добавлена в Шаге 7 вместе с 3D-спрайтами врагов
           input.resetShoot();
         }
       }
 
-      bullets.forEach(b => b.update(dt, world));
-      enemies.forEach(e => e.update(dt, player));
-      particles.update(dt);
-      
       waveManager.update(dt);
-      checkCollisions();
+      updateHUD();
 
-      // Проверка конца волны
-      if (waveManager.checkWaveComplete(enemies.length)) {
+      // Проверка завершения волны (пока без рендера врагов, просто по таймеру/спавну)
+      if (waveManager.checkWaveComplete(enemies.filter(e => e.active).length)) {
         openShop();
       }
-
-      updateHUD();
     }
 
-    // --- РЕНДЕР ---
-    ctx.fillStyle = '#0a0a14';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-    ctx.translate(-player.x + window.innerWidth / 2, -player.y + window.innerHeight / 2);
-
-    world.draw(ctx, textures.wall);
-    bullets.forEach(b => b.draw(ctx, textures.bullet));
-    enemies.forEach(e => e.draw(ctx, textures.enemy));
-
-    // Игрок + Вспышка
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    ctx.rotate(player.angle);
-    ctx.drawImage(textures.player, -16, -16, 32, 32);
-    if (isFiring) {
-      ctx.fillStyle = 'rgba(255, 200, 0, 0.9)';
-      ctx.beginPath(); ctx.arc(20, 0, 12, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(24, 0, 6, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.restore();
-
-    particles.draw(ctx);
-    ctx.restore();
+    // Рендер FPS вида
+    raycaster.render(timestamp, player);
 
     requestAnimationFrame(gameLoop);
   }
 
-  // Старт игры
   waveManager.startWave();
   setTimeout(() => {
     document.getElementById('loader').classList.add('hidden');
     document.getElementById('ui').classList.remove('hidden');
     requestAnimationFrame(gameLoop);
-    console.log(` DOOM-LITE v${GAME.version} | Step 5: Waves & Shop`);
+    console.log(` DOOM MODE: Raycasting Active | Step 6`);
   }, 800);
 }
 
