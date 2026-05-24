@@ -13,9 +13,12 @@ export class Raycaster {
     this.pistolFrames = pistolFrames;
     this.currentFrame = 0;
     this.frameTimer = 0;
+    this.animState = 0;
+    this.animTimer = 0;
+    this.frameDelay = 0.08;
   }
 
-  render(time, player, wallTex, isShooting) {
+  render(time, player, wallTex, isShooting, dt) {
     const ctx = this.ctx;
     const w = this.width;
     const h = this.height;
@@ -110,33 +113,39 @@ export class Raycaster {
       ctx.fillRect(x, drawStart, 1, drawEnd - drawStart);
     }
 
-    this._drawWeapon(ctx, time, isShooting);
+    this._drawWeapon(ctx, time, isShooting, dt);
   }
 
-  _drawWeapon(ctx, time, isShooting) {
+  _drawWeapon(ctx, time, isShooting, dt) {
     const bobX = Math.sin(time * 0.005) * 4;
     const bobY = Math.abs(Math.cos(time * 0.005)) * 6;
-    const recoil = isShooting ? 20 : 0;
+    const recoil = this.animState > 0 ? 18 : 0;
     const cx = this.width / 2 + bobX;
     const cy = this.height + bobY - recoil;
     
-    let frameIndex = 0;
-    
-    if (isShooting) {
-      this.frameTimer += 16;
-      if (this.frameTimer > 50) {
-        this.currentFrame = (this.currentFrame + 1) % 4 + 1;
-        this.frameTimer = 0;
-      }
-      frameIndex = this.currentFrame;
-    } else {
-      this.currentFrame = 0;
-      this.frameTimer = 0;
+    if (isShooting && this.animState === 0) {
+      this.animState = 1;
+      this.animTimer = 0;
     }
     
-    const img = this.pistolFrames[frameIndex];
+    if (this.animState > 0) {
+      this.animTimer += dt;
+      if (this.animTimer >= this.frameDelay) {
+        this.animState++;
+        this.animTimer = 0;
+        if (this.animState > 4) {
+          this.animState = 0;
+        }
+      }
+    }
+    
+    const img = this.pistolFrames[this.animState];
     if (img && img.complete) {
       ctx.drawImage(img, cx - 32, cy - 64, 64, 64);
     }
+  }
+
+  isReady() {
+    return this.animState === 0;
   }
 }
