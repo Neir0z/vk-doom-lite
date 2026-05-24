@@ -299,35 +299,58 @@ function gameLoop(ts) {
     if(player.health<=0 && currentScreen==='game') endGame();
   }
 
-  // Рендеринг всегда работает
-  const ctx = raycaster.ctx;
-  if (ctx && canvas) {
-    // Очистка
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    if(gameStarted) {
-      raycaster.render(ts, player, wallTex);
+  // ТЕСТОВЫЙ РЕНДЕРИНГ - красный квадрат
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Чёрный фон
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
-      for(const e of enemies) if(e.active) e.draw(ctx, player);
-      particles.draw(ctx);
+      // Красный квадрат для теста
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(100, 100, 100, 100);
       
-      const cx=canvas.width/2, cy=canvas.height/2;
-      ctx.strokeStyle=currentScreen==='game'?'#0f0':'#555'; ctx.lineWidth=2;
-      ctx.beginPath();
-      ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
-      ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
-      ctx.stroke();
+      // Текст
+      ctx.fillStyle = '#0f0';
+      ctx.font = '20px monospace';
+      ctx.fillText('TEST: Canvas works!', 50, 50);
+      
+      if(gameStarted) {
+        // Попробуем raycaster
+        try {
+          raycaster.render(ts, player, wallTex);
+          ctx.fillStyle = '#fff';
+          ctx.fillText('Raycaster OK', 50, 90);
+        } catch(e) {
+          ctx.fillStyle = '#f00';
+          ctx.fillText('Raycaster ERROR: ' + e.message, 50, 90);
+        }
+        
+        // Враги
+        enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+        for(const e of enemies) if(e.active) e.draw(ctx, player);
+        particles.draw(ctx);
+        
+        const cx=canvas.width/2, cy=canvas.height/2;
+        ctx.strokeStyle='#0f0'; ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
+        ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
+        ctx.stroke();
 
-      minimap.draw(ctx, player, enemies);
+        minimap.draw(ctx, player, enemies);
 
-      ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
-      ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, canvas.height-8);
-      ctx.shadowBlur=0;
+        ctx.fillStyle='#fff'; ctx.font='bold 11px monospace';
+        ctx.fillText(WEAPONS[currentWeapon].name+' | '+player.ammo, 8, canvas.height-8);
 
-      if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+        if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,0.3)'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+      }
+    } else {
+      console.error('❌ Cannot get 2D context!');
     }
+  } else {
+    console.error('❌ Canvas is null!');
   }
 
   requestAnimationFrame(gameLoop);
