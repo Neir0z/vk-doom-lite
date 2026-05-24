@@ -38,3 +38,17 @@ export const VK = {
   appId: null, // Заполнишь после создания приложения
   storageKey: 'doom_lite_save',
 };
+// ... (всё старое оставляем) ...
+
+export const SHOP = {
+  healthCost: 50,
+  healthAmount: 50,
+  ammoCost: 30,
+  ammoAmount: 15,
+};
+
+export const WAVES = {
+  startEnemies: 3,
+  increasePerWave: 2, // +2 врага за каждую волну
+  rewardPerKill: 10,  // Монет за убийство
+};
