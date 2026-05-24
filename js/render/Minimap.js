@@ -2,29 +2,29 @@ import { MAP, RENDER } from '../config.js';
 
 export class Minimap {
   constructor() {
-    this.size = 50; // ✅ Уменьшил до 50px
-    this.padding = 5;
-    // Масштаб относительно внутреннего разрешения канваса (320x192)
-    this.scale = this.size / (MAP[0].length * RENDER.mapScale) * (320 / 15); 
+    this.size = 80;
+    this.padding = 8;
+    this.cellSize = this.size / (MAP[0].length * RENDER.mapScale) * 64;
   }
 
   draw(ctx, player, enemies) {
     const x = ctx.canvas.width - this.size - this.padding;
     const y = this.padding;
 
-    ctx.fillStyle = 'rgba(10, 10, 20, 0.7)';
+    // Фон
+    ctx.fillStyle = 'rgba(10, 10, 20, 0.8)';
     ctx.fillRect(x, y, this.size, this.size);
 
     // Стены
-    ctx.fillStyle = '#3a3a5c';
+    ctx.fillStyle = '#4a4a6a';
     for (let r = 0; r < MAP.length; r++) {
       for (let c = 0; c < MAP[r].length; c++) {
         if (MAP[r][c] === 1) {
           ctx.fillRect(
-            x + c * RENDER.mapScale * this.scale,
-            y + r * RENDER.mapScale * this.scale,
-            RENDER.mapScale * this.scale,
-            RENDER.mapScale * this.scale
+            x + c * this.cellSize,
+            y + r * this.cellSize,
+            this.cellSize,
+            this.cellSize
           );
         }
       }
@@ -34,31 +34,32 @@ export class Minimap {
     ctx.fillStyle = '#ef4444';
     for (const e of enemies) {
       if (e.active) {
-        const ex = x + (e.x * this.scale);
-        const ey = y + (e.y * this.scale);
+        const ex = x + (e.x / RENDER.mapScale) * this.cellSize;
+        const ey = y + (e.y / RENDER.mapScale) * this.cellSize;
         ctx.beginPath();
-        ctx.arc(ex, ey, e.isBoss ? 3 : 1.5, 0, Math.PI * 2);
+        ctx.arc(ex, ey, e.isBoss ? 4 : 2, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
     // Игрок
-    const px = x + (player.x * this.scale);
-    const py = y + (player.y * this.scale);
+    const px = x + (player.x / RENDER.mapScale) * this.cellSize;
+    const py = y + (player.y / RENDER.mapScale) * this.cellSize;
     ctx.fillStyle = '#22c55e';
     ctx.beginPath();
-    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+    ctx.arc(px, py, 3, 0, Math.PI * 2);
     ctx.fill();
     
+    // Стрелка направления
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(px, py);
-    ctx.lineTo(px + Math.cos(player.angle) * 5, py + Math.sin(player.angle) * 5);
+    ctx.lineTo(px + Math.cos(player.angle) * 6, py + Math.sin(player.angle) * 6);
     ctx.stroke();
 
     // Рамка
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = '#666';
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, this.size, this.size);
   }
