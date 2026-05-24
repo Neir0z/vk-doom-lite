@@ -11,22 +11,25 @@ export class InputManager {
     this._bindTouch();
   }
 
-  _bindKeyboard() {
-    window.addEventListener('keydown', (e) => {
-      if (Object.values(CONTROLS.keyboard.move).includes(e.key.toLowerCase())) {
-        this.keys.add(e.key.toLowerCase());
-      }
-      if (e.key === CONTROLS.keyboard.shoot) {
-        this.shootPressed = true;
-      }
-    });
-    window.addEventListener('keyup', (e) => {
-      this.keys.delete(e.key.toLowerCase());
-      if (e.key === CONTROLS.keyboard.shoot) {
-        this.shootPressed = false;
-      }
-    });
-  }
+ _bindKeyboard() {
+  window.addEventListener('keydown', (e) => {
+    // Используем e.code (физическая клавиша), а не e.key (символ)
+    // Это работает при любой раскладке!
+    if (e.code === 'KeyW' || e.code === 'ArrowUp') this.keys.add('up');
+    if (e.code === 'KeyS' || e.code === 'ArrowDown') this.keys.add('down');
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') this.keys.add('left');
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') this.keys.add('right');
+    if (e.code === 'Space') this.shootPressed = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'KeyW' || e.code === 'ArrowUp') this.keys.delete('up');
+    if (e.code === 'KeyS' || e.code === 'ArrowDown') this.keys.delete('down');
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') this.keys.delete('left');
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') this.keys.delete('right');
+    if (e.code === 'Space') this.shootPressed = false;
+  });
+}
 
   _bindTouch() {
     const joystick = document.getElementById('joystick');
