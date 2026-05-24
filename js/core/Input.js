@@ -1,4 +1,4 @@
-import { CONTROLS } from '../config.js';
+// import { CONTROLS } from '../config.js';
 
 export class InputManager {
   constructor() {
