@@ -38,3 +38,8 @@ export const MAP = [
 ];
 
 export const VK = { storageKey: 'doom_highscore' };
+// ... (всё как было) ...
+
+// В конец файла добавь:
+// Экспорт MAP для использования в других модулях
+globalThis.MAP = MAP;
