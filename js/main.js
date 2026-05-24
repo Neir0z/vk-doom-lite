@@ -87,11 +87,11 @@ async function bootstrap() {
   } catch (e) { console.warn('VK Load Error', e); }
   ui.highscore.textContent = highScore;
 
-  function updateHUD() {
-    ui.health.textContent = player.health;
-    ui.ammo.textContent = player.ammo;
-    ui.money.textContent = player.score; // Очки = Деньги
-    ui.wave.textContent = waveManager.wave;
+   function updateHUD() {
+    if (ui.health) ui.health.textContent = player.health;
+    if (ui.ammo) ui.ammo.textContent = player.ammo;
+    if (ui.money) ui.money.textContent = player.score;
+    if (ui.wave) ui.wave.textContent = waveManager.wave;
   }
 
   function openShop() {
