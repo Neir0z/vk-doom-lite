@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="DOOM-LITE: Ретро-шутер от первого лица">
   <title>DOOM-LITE</title>
   <link rel="stylesheet" href="css/main.css">
 </head>
@@ -16,88 +14,162 @@
   <div id="loader" class="loader">
     <div class="loader__title">DOOM-LITE</div>
     <div class="loader__bar"><div class="loader__progress"></div></div>
-    <div id="loader__status" class="loader__status">Инициализация...</div>
+    <div id="loader__status" class="loader__status">Загрузка...</div>
     <div id="loader__modules" class="loader__modules"></div>
   </div>
 
-  <!-- Главное меню -->
-  <div id="menu" class="menu hidden">
+  <!-- ГЛАВНОЕ МЕНЮ -->
+  <div id="screen-menu" class="screen menu">
     <h1 class="menu__title">DOOM-LITE</h1>
     <div class="menu__buttons">
-      <button id="btn-new-game" class="menu__btn">🎮 Новая игра</button>
-      <button id="btn-menu-shop" class="menu__btn">🛒 Магазин</button>
-      <button id="btn-rules" class="menu__btn">📜 Правила</button>
-      <button id="btn-support" class="menu__btn">📧 Техподдержка</button>
-      <button id="btn-exit" class="menu__btn">🚪 Выход</button>
+      <button class="menu__btn btn-play" onclick="showScreen('game')">🎮 Играть</button>
+      <button class="menu__btn" onclick="showScreen('shop')">🛒 Магазин</button>
+      <button class="menu__btn" onclick="showScreen('rules')">📜 Правила</button>
+      <button class="menu__btn" onclick="showScreen('support')">📧 Техподдержка</button>
+      <button class="menu__btn" onclick="exitGame()">🚪 Выход</button>
     </div>
   </div>
 
-  <!-- Игровой канвас -->
-  <canvas id="game" class="game-canvas"></canvas>
-
-  <!-- Игровой интерфейс (HUD + Контролы + Модалки) -->
-  <div id="ui" class="ui hidden">
-    <header class="hud">
-      <div class="hud__stat">❤️ <span id="hud-health">100</span></div>
-      <div class="hud__stat">🔫 <span id="hud-ammo">30</span></div>
-      <div class="hud__stat" style="color:#fbbf24">💰 <span id="hud-money">0</span></div>
-      <div class="hud__stat">🌊 <span id="hud-wave">1</span></div>
-    </header>
-
-    <!-- Виртуальный джойстик -->
-    <div id="joystick" class="joystick">
-      <div class="joystick__base"></div>
-      <div class="joystick__stick"></div>
-    </div>
-    
-    <!-- Кнопка стрельбы -->
-    <button id="btn-shoot" class="btn-shoot">🔥</button>
-
-    <!-- Магазин (между волнами) -->
-    <dialog id="modal-shop" class="modal shop-modal">
-      <div class="modal__content">
-        <h2 class="accent-text">ВОЛНА ПРОЙДЕНА</h2>
-        <p class="shop-balance">Доступно: <span id="shop-money">0</span> 💰</p>
-        <div class="shop-grid">
-          <button id="btn-buy-health" class="shop-item">
-            <span class="shop-icon">❤️</span>
-            <span class="shop-desc">+50 HP</span>
-            <span class="shop-price">50 💰</span>
-          </button>
-          <button id="btn-buy-ammo" class="shop-item">
-            <span class="shop-icon">🔫</span>
-            <span class="shop-desc">+20 Ammo</span>
-            <span class="shop-price">30 💰</span>
-          </button>
+  <!-- ЭКРАН МАГАЗИНА -->
+  <div id="screen-shop" class="screen shop-screen hidden">
+    <h2 class="screen__title">🛒 Магазин улучшений</h2>
+    <div class="shop__balance">Ваши монеты: <span id="shop-coins">0</span> 💰</div>
+    <div class="shop__items">
+      <div class="shop__item">
+        <span class="shop__item-icon">❤️</span>
+        <div class="shop__item-info">
+          <div class="shop__item-name">Аптечка</div>
+          <div class="shop__item-desc">+50 здоровья</div>
         </div>
-        <button id="btn-next-wave" class="btn btn--primary" style="margin-top: 16px; width: 100%;">СЛЕДУЮЩАЯ ВОЛНА</button>
+        <button class="shop__buy" onclick="buyItem('health', 50)">50 💰</button>
       </div>
-    </dialog>
-
-    <!-- Game Over -->
-    <dialog id="modal-over" class="modal">
-      <div class="modal__content">
-        <h2 class="accent-text">GAME OVER</h2>
-        <p>Выживано волн: <span id="final-wave" class="big-score">0</span></p>
-        <p>Рекорд (VK): <span id="highscore-display" class="highscore">0</span></p>
-        <button id="btn-restart" class="btn btn--primary">🔄 В БОЙ</button>
+      <div class="shop__item">
+        <span class="shop__item-icon">🔫</span>
+        <div class="shop__item-info">
+          <div class="shop__item-name">Патроны</div>
+          <div class="shop__item-desc">+20 патронов</div>
+        </div>
+        <button class="shop__buy" onclick="buyItem('ammo', 30)">30 💰</button>
       </div>
-    </dialog>
-
-    <!-- Правила -->
-    <dialog id="modal-rules" class="modal">
-      <div class="modal__content">
-        <h3 class="accent-text">📜 Правила игры</h3>
-        <p>WASD / Джойстик — движение и поворот</p>
-        <p>Пробел / 🔥 — стрельба</p>
-        <p>1, 2, 3 — смена оружия</p>
-        <p>Выживай волны, собирай монеты, покупай улучшения.</p>
-        <button id="btn-close-rules" class="btn btn--primary" style="margin-top: 12px;">Закрыть</button>
+      <div class="shop__item">
+        <span class="shop__item-icon">🔫</span>
+        <div class="shop__item-info">
+          <div class="shop__item-name">Дробовик</div>
+          <div class="shop__item-desc">Мощное оружие</div>
+        </div>
+        <button class="shop__buy" onclick="buyItem('shotgun', 100)">100 💰</button>
       </div>
-    </dialog>
+      <div class="shop__item">
+        <span class="shop__item-icon">🔫</span>
+        <div class="shop__item-info">
+          <div class="shop__item-name">Автомат</div>
+          <div class="shop__item-desc">Скорострельность</div>
+        </div>
+        <button class="shop__buy" onclick="buyItem('machinegun', 150)">150 💰</button>
+      </div>
+    </div>
+    <button class="btn-back" onclick="showScreen('menu')">← Назад в меню</button>
   </div>
 
-  <!-- Подключение скриптов -->
+  <!-- ЭКРАН ПРАВИЛ -->
+  <div id="screen-rules" class="screen rules-screen hidden">
+    <h2 class="screen__title">📜 Правила игры</h2>
+    <div class="rules__content">
+      <h3>🎮 Управление:</h3>
+      <ul>
+        <li><strong>WASD</strong> или <strong>Джойстик</strong> — движение и поворот</li>
+        <li><strong>Пробел</strong> или <strong>🔥</strong> — стрельба</li>
+        <li><strong>1, 2, 3</strong> — смена оружия</li>
+      </ul>
+      
+      <h3>🎯 Цель игры:</h3>
+      <ul>
+        <li>Уничтожай волны врагов</li>
+        <li>Собирай монеты за убийства</li>
+        <li>Покупай улучшения в магазине</li>
+        <li>Выживи как можно дольше!</li>
+      </ul>
+      
+      <h3>👾 Враги:</h3>
+      <ul>
+        <li>🔴 <strong>Grunt</strong> — обычный враг</li>
+        <li>🟠 <strong>Fast</strong> — быстрый, но слабый</li>
+        <li>🟣 <strong>Tank</strong> — медленный, но мощный</li>
+        <li>🔥 <strong>Boss</strong> — появляется каждые 5 волн</li>
+      </ul>
+    </div>
+    <button class="btn-back" onclick="showScreen('menu')">← Назад в меню</button>
+  </div>
+
+  <!-- ЭКРАН ТЕХПОДДЕРЖКИ -->
+  <div id="screen-support" class="screen support-screen hidden">
+    <h2 class="screen__title">📧 Техподдержка</h2>
+    <div class="support__content">
+      <p>Если у вас возникли проблемы или вопросы:</p>
+      
+      <div class="support__contact">
+        <strong>📧 Email:</strong><br>
+        <a href="mailto:support@doom-lite.ru">support@doom-lite.ru</a>
+      </div>
+      
+      <div class="support__contact">
+        <strong>💬 Telegram:</strong><br>
+        <a href="https://t.me/doomlite_support">@doomlite_support</a>
+      </div>
+      
+      <div class="support__contact">
+        <strong>📱 VK:</strong><br>
+        <a href="https://vk.com/doomlite">vk.com/doomlite</a>
+      </div>
+      
+      <p class="support__note">Обычно отвечаем в течение 24 часов.</p>
+    </div>
+    <button class="btn-back" onclick="showScreen('menu')">← Назад в меню</button>
+  </div>
+
+  <!-- ИГРОВОЙ ЭКРАН -->
+  <div id="screen-game" class="screen game-screen hidden">
+    <canvas id="game" class="game-canvas"></canvas>
+    <div id="ui" class="ui">
+      <header class="hud">
+        <div class="hud__stat">❤️ <span id="hud-health">100</span></div>
+        <div class="hud__stat">🔫 <span id="hud-ammo">30</span></div>
+        <div class="hud__stat" style="color:#fbbf24">💰 <span id="hud-money">0</span></div>
+        <div class="hud__stat">🌊 <span id="hud-wave">1</span></div>
+      </header>
+      <div id="joystick" class="joystick"><div class="joystick__base"></div><div class="joystick__stick"></div></div>
+      <button id="btn-shoot" class="btn-shoot">🔥</button>
+      
+      <!-- Магазин между волнами -->
+      <dialog id="modal-shop" class="modal">
+        <div class="modal__content">
+          <h2 class="accent-text">ВОЛНА ПРОЙДЕНА!</h2>
+          <p class="shop-balance">Доступно: <span id="shop-money">0</span> 💰</p>
+          <div class="shop-grid">
+            <button id="btn-buy-health" class="shop-item">
+              <span class="shop-icon">❤️</span><span class="shop-desc">+50 HP</span><span class="shop-price">50 💰</span>
+            </button>
+            <button id="btn-buy-ammo" class="shop-item">
+              <span class="shop-icon">🔫</span><span class="shop-desc">+20 Ammo</span><span class="shop-price">30 💰</span>
+            </button>
+          </div>
+          <button id="btn-next-wave" class="btn btn--primary">СЛЕДУЮЩАЯ ВОЛНА →</button>
+          <button class="btn btn--secondary" onclick="showScreen('menu')" style="margin-top:10px">В меню</button>
+        </div>
+      </dialog>
+      
+      <!-- Game Over -->
+      <dialog id="modal-over" class="modal">
+        <div class="modal__content">
+          <h2 class="accent-text">GAME OVER</h2>
+          <p>Пройдено волн: <span id="final-wave" class="big-score">0</span></p>
+          <button id="btn-restart" class="btn btn--primary">🔄 Заново</button>
+          <button class="btn btn--secondary" onclick="showScreen('menu')" style="margin-top:10px">В меню</button>
+        </div>
+      </dialog>
+    </div>
+  </div>
+
   <script src="lib/vk-bridge.min.js"></script>
   <script type="module" src="js/main.js"></script>
   <script>
