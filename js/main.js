@@ -1,26 +1,48 @@
-console.log('🎮 main.js loaded!');
-console.log('📦 Loading config...');
+console.log('🎮 Loading all modules...');
 
 import { GAME, PLAYER, SHOP, WAVES, RENDER, MAP, WEAPONS, ENEMY_TYPES } from './config.js';
-console.log('✅ Config loaded');
+console.log('✅ Config');
 
-console.log('📦 Loading InputManager...');
 import { InputManager } from './core/Input.js';
-console.log('✅ InputManager loaded');
+console.log('✅ Input');
+
+import { Player } from './core/Player.js';
+console.log('✅ Player');
+
+import { Weapon } from './core/Weapon.js';
+console.log('✅ Weapon');
+
+import { Raycaster } from './render/Raycaster.js';
+console.log('✅ Raycaster');
+
+import { Minimap } from './render/Minimap.js';
+console.log('✅ Minimap');
+
+import { AssetGenerator } from './render/AssetGenerator.js';
+console.log('✅ Assets');
+
+import { ParticleEffects } from './render/ParticleEffects.js';
+console.log('✅ Particles');
+
+import { SoundManager } from './audio/SoundManager.js';
+console.log('✅ Sound');
+
+import { WaveManager } from './core/WaveManager.js';
+console.log('✅ Waves');
+
+import { Enemy3D } from './core/Enemy3D.js';
+console.log('✅ Enemies');
+
+// Если дошли сюда - все импорты работают!
+console.log('🎉 ALL MODULES LOADED!');
 
 async function bootstrap() {
-  console.log('✅ Bootstrap started');
-  
   const canvas = document.getElementById('game');
-  const ui = document.getElementById('ui');
   const loader = document.getElementById('loader');
+  const ui = document.getElementById('ui');
   
   if (loader) loader.classList.add('hidden');
   if (ui) ui.classList.remove('hidden');
-  
-  // Тест InputManager
-  const input = new InputManager();
-  console.log('Input created:', input);
   
   if (canvas) {
     const ctx = canvas.getContext('2d');
@@ -28,7 +50,7 @@ async function bootstrap() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#0f0';
     ctx.font = '16px monospace';
-    ctx.fillText('Input OK! Move: WASD', 10, 30);
+    ctx.fillText('ALL SYSTEMS READY!', 10, 30);
   }
 }
 
