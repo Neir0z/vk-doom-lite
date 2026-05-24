@@ -1,17 +1,19 @@
 import { MAP, RENDER } from '../config.js';
 
 export class Raycaster {
-  constructor(canvas, weaponImg) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d', { alpha: false });
-    this.width = RENDER.numRays;
-    this.height = Math.floor(this.width * 0.6);
-    this.canvas.width = this.width;
-    this.canvas.height = this.height;
-    this.ctx.imageSmoothingEnabled = false;
-    this.zBuffer = new Array(this.width).fill(0);
-    this.weaponImg = weaponImg;
-  }
+  constructor(canvas, pistolFrames) {
+  this.canvas = canvas;
+  this.ctx = canvas.getContext('2d', { alpha: false });
+  this.width = RENDER.numRays;
+  this.height = Math.floor(this.width * 0.6);
+  this.canvas.width = this.width;
+  this.canvas.height = this.height;
+  this.ctx.imageSmoothingEnabled = false;
+  this.zBuffer = new Array(this.width).fill(0);
+  this.pistolFrames = pistolFrames;
+  this.currentFrame = 0;
+  this.frameTimer = 0;
+}
 
   render(time, player, wallTex) {
     const ctx = this.ctx;
@@ -115,17 +117,33 @@ export class Raycaster {
   }
 
   _drawWeapon(ctx, time, isFiring) {
-    const bobX = Math.sin(time * 0.005) * 4;
-    const bobY = Math.abs(Math.cos(time * 0.005)) * 6;
-    const recoil = isFiring ? 24 : 0;
-    const cx = this.width / 2 + bobX;
-    const cy = this.height + bobY - recoil;
-    
-    if (this.weaponImg && this.weaponImg.complete) {
-      ctx.drawImage(this.weaponImg, cx - 32, cy - 64, 64, 64);
-    } else {
-      ctx.fillStyle = '#4a4a5a';
-      ctx.fillRect(cx - 12, cy - 60, 24, 50);
+  const bobX = Math.sin(time * 0.005) * 4;
+  const bobY = Math.abs(Math.cos(time * 0.005)) * 6;
+  const recoil = isFiring ? 20 : 0;
+  const cx = this.width / 2 + bobX;
+  const cy = this.height + bobY - recoil;
+  
+  // Выбор кадра
+  let frameIndex = 0; // спокойный
+  
+  if (isFiring) {
+    // Анимация стрельбы (кадры 1-4)
+    this.frameTimer += 16; // ~60 FPS
+    if (this.frameTimer > 50) { // меняем кадр каждые 50мс
+      this.currentFrame = (this.currentFrame + 1) % 4 + 1; // 1,2,3,4
+      this.frameTimer = 0;
     }
+    frameIndex = this.currentFrame;
+  } else {
+    // Сброс к спокойному
+    this.currentFrame = 0;
+    this.frameTimer = 0;
   }
+  
+  // Рисуем кадр
+  const img = this.pistolFrames[frameIndex];
+  if (img && img.complete) {
+    ctx.drawImage(img, cx - 32, cy - 64, 64, 64);
+  }
+}
 }
