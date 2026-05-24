@@ -11,42 +11,53 @@ import { ParticleEffects } from './render/ParticleEffects.js';
 import { SoundManager } from './audio/SoundManager.js';
 import { WaveManager } from './core/WaveManager.js';
 import { Enemy3D } from './core/Enemy3D.js';
+import { MusicGenerator } from './audio/MusicGenerator.js';
 
-// Лоадер
-const loader = document.getElementById('loader');
+// Состояние экрана
+let currentScreen = 'menu'; // 'menu', 'game', 'shop', 'gameover', 'rules'
+
+// DOM
+const menuEl = document.getElementById('menu');
+const canvas = document.getElementById('game');
 const ui = document.getElementById('ui');
-const progress = document.querySelector('.loader__progress');
-const status = document.getElementById('loader__status');
-const modList = document.getElementById('loader__modules');
-let modCount = 0;
-const totalMods = 11;
 
-function logMod(name) {
-  modCount++;
-  if(progress) progress.style.width = (modCount/totalMods*100)+'%';
-  if(status) status.textContent = 'Загрузка: '+name;
-  if(modList) {
-    const d = document.createElement('div');
-    d.className = 'loader__module ok';
-    d.textContent = name;
-    modList.appendChild(d);
-  }
+// Музыка
+const music = new MusicGenerator();
+
+// Кнопки меню
+document.getElementById('btn-new-game').onclick = startGame;
+document.getElementById('btn-menu-shop').onclick = () => { currentScreen='shop'; ui.querySelector('.modal-shop')?.showModal(); };
+document.getElementById('btn-rules').onclick = () => document.getElementById('modal-rules').showModal();
+document.getElementById('btn-close-rules').onclick = () => document.getElementById('modal-rules').close();
+document.getElementById('btn-support').onclick = () => alert('Поддержка: support@doom-lite.ru');
+document.getElementById('btn-exit').onclick = () => {
+  if(window.vkBridge) window.vkBridge.send('VKWebAppClose');
+  else window.close();
+};
+
+function startGame() {
+  currentScreen = 'game';
+  menuEl.classList.add('hidden');
+  ui.classList.remove('hidden');
+  music.play();
+  
+  // Сброс игры
+  enemies.length = 0;
+  player.health = PLAYER.maxHealth;
+  player.ammo = PLAYER.maxAmmo;
+  player.score = 0;
+  player.x = 7.5 * RENDER.mapScale;
+  player.y = 4.5 * RENDER.mapScale;
+  player.angle = 0;
+  weapon.switchTo('pistol');
+  currentWeapon = 'pistol';
+  hasShotgun = false; hasMachinegun = false;
+  waveManager.startWave();
+  
+  requestAnimationFrame(gameLoop);
 }
 
-logMod('Config'); import('./config.js').then(logMod.bind(null,'Config OK'));
-logMod('Input'); import('./core/Input.js').then(logMod.bind(null,'Input OK'));
-logMod('Player'); import('./core/Player.js').then(logMod.bind(null,'Player OK'));
-logMod('Weapon'); import('./core/Weapon.js').then(logMod.bind(null,'Weapon OK'));
-logMod('Raycaster'); import('./render/Raycaster.js').then(logMod.bind(null,'Raycaster OK'));
-logMod('Minimap'); import('./render/Minimap.js').then(logMod.bind(null,'Minimap OK'));
-logMod('Assets'); import('./render/AssetGenerator.js').then(logMod.bind(null,'Assets OK'));
-logMod('Particles'); import('./render/ParticleEffects.js').then(logMod.bind(null,'Particles OK'));
-logMod('Sound'); import('./audio/SoundManager.js').then(logMod.bind(null,'Sound OK'));
-logMod('Waves'); import('./core/WaveManager.js').then(logMod.bind(null,'Waves OK'));
-logMod('Enemies'); import('./core/Enemy3D.js').then(logMod.bind(null,'Enemies OK'));
-
 // Инициализация игры
-const canvas = document.getElementById('game');
 const raycaster = new Raycaster(canvas);
 const input = new InputManager();
 const audio = new SoundManager();
@@ -59,13 +70,11 @@ const weapon = new Weapon('pistol', player);
 const minimap = new Minimap();
 const enemies = [];
 
-let gameState = 'playing';
 let damageFlash = 0;
 let stepTimer = 0;
 let currentWeapon = 'pistol';
 let hasShotgun = false, hasMachinegun = false;
 
-// UI
 const uiEls = {
   health: document.getElementById('hud-health'),
   ammo: document.getElementById('hud-ammo'),
@@ -89,7 +98,7 @@ function updateHUD() {
 }
 
 window.addEventListener('keydown', e => {
-  if(gameState !== 'playing') return;
+  if(currentScreen !== 'game') return;
   if(e.key==='1') { currentWeapon='pistol'; weapon.switchTo('pistol'); }
   if(e.key==='2' && hasShotgun) { currentWeapon='shotgun'; weapon.switchTo('shotgun'); }
   if(e.key==='3' && hasMachinegun) { currentWeapon='machinegun'; weapon.switchTo('machinegun'); }
@@ -113,14 +122,14 @@ const waveManager = new WaveManager(() => {
 });
 
 function openShop() {
-  gameState='shop';
+  currentScreen='shop';
   uiEls.shopMoney.textContent=player.score;
   if(uiEls.shopModal) uiEls.shopModal.showModal();
   if(uiEls.btnHealth) uiEls.btnHealth.disabled = player.score<SHOP.healthCost;
   if(uiEls.btnAmmo) uiEls.btnAmmo.disabled = player.score<SHOP.ammoCost;
 }
 function closeShop() {
-  gameState='playing';
+  currentScreen='game';
   if(uiEls.shopModal) uiEls.shopModal.close();
   waveManager.nextWave();
 }
@@ -170,7 +179,7 @@ function shootRaycast() {
 }
 
 function endGame() {
-  gameState='gameover';
+  currentScreen='gameover';
   if(uiEls.finalWave) uiEls.finalWave.textContent=waveManager.wave;
   if(uiEls.overModal) uiEls.overModal.showModal();
 }
@@ -180,7 +189,7 @@ function gameLoop(ts) {
   const dt = Math.min((ts-lastTime)/1000, 0.04);
   lastTime = ts;
 
-  if(gameState==='playing') {
+  if(currentScreen==='game') {
     player.update(dt, input);
     weapon.update(dt);
     if(input.isShooting()) { shootRaycast(); input.resetShoot(); }
@@ -201,38 +210,36 @@ function gameLoop(ts) {
     waveManager.update(dt);
     updateHUD();
     if(waveManager.checkWaveComplete(active.length)) openShop();
-    if(player.health<=0 && gameState==='playing') endGame();
+    if(player.health<=0 && currentScreen==='game') endGame();
   }
 
   const ctx = raycaster.ctx;
   raycaster.render(ts, player, wallTex);
   
-  enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
-  for(const e of enemies) if(e.active) e.draw(ctx, player);
-  
-  particles.draw(ctx);
-  
-  const cx=ctx.canvas.width/2, cy=ctx.canvas.height/2;
-  ctx.strokeStyle=gameState==='playing'?'#0f0':'#555'; ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
-  ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
-  ctx.stroke();
+  if(currentScreen === 'game' || currentScreen === 'shop' || currentScreen === 'gameover') {
+    enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+    for(const e of enemies) if(e.active) e.draw(ctx, player);
+    particles.draw(ctx);
+    
+    const cx=ctx.canvas.width/2, cy=ctx.canvas.height/2;
+    ctx.strokeStyle=currentScreen==='game'?'#0f0':'#555'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
+    ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
+    ctx.stroke();
 
-  minimap.draw(ctx, player, enemies);
+    minimap.draw(ctx, player, enemies);
 
-  ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
-  ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, ctx.canvas.height-8);
-  ctx.shadowBlur=0;
+    ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
+    ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, ctx.canvas.height-8);
+    ctx.shadowBlur=0;
 
-  if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height); }
+    if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height); }
+  }
 
   requestAnimationFrame(gameLoop);
 }
 
-// Запуск
-if(loader) loader.classList.add('hidden');
-if(ui) ui.classList.remove('hidden');
-waveManager.startWave();
+// Старт в меню
 requestAnimationFrame(gameLoop);
-console.log('🎮 GAME RUNNING');
+console.log('🎮 READY');
