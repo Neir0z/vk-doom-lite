@@ -87,24 +87,23 @@ export class InputManager {
   }
 
   getMovement() {
-    let dx = 0, dy = 0;
-    
-    // Клавиатура
-    if (this.keys.has(CONTROLS.keyboard.move.left)) dx -= 1;
-    if (this.keys.has(CONTROLS.keyboard.move.right)) dx += 1;
-    if (this.keys.has(CONTROLS.keyboard.move.up)) dy -= 1;
-    if (this.keys.has(CONTROLS.keyboard.move.down)) dy += 1;
-    
-    // Тач-джойстик (приоритет)
-    if (this.touch.active) {
-      dx = this.touch.x;
-      dy = this.touch.y;
-    }
-    
-    // Нормализация диагоналей
-    const len = Math.sqrt(dx*dx + dy*dy);
-    return len > 0 ? { x: dx/len, y: dy/len } : { x: 0, y: 0 };
+  let dx = 0, dy = 0;
+  
+  // Теперь используем 'up', 'down', 'left', 'right' вместо 'w', 'a', 's', 'd'
+  if (this.keys.has('left')) dx -= 1;
+  if (this.keys.has('right')) dx += 1;
+  if (this.keys.has('up')) dy -= 1;
+  if (this.keys.has('down')) dy += 1;
+  
+  // Тач-джойстик (приоритет)
+  if (this.touch.active) {
+    dx = this.touch.x;
+    dy = this.touch.y;
   }
+  
+  const len = Math.sqrt(dx*dx + dy*dy);
+  return len > 0 ? { x: dx/len, y: dy/len } : { x: 0, y: 0 };
+}
 
   isShooting() {
     return this.shootPressed;
