@@ -10,6 +10,9 @@ import { Minimap } from './render/Minimap.js';
 import { TextureLoader } from './render/TextureLoader.js';
 
 async function bootstrap() {
+  import { AssetGenerator } from './render/AssetGenerator.js';
+  import { ParticleEffects } from './render/ParticleEffects.js';
+
   // 1. Инициализация ядра
   const canvas = document.getElementById('game');
   const raycaster = new Raycaster(canvas);
@@ -25,6 +28,9 @@ async function bootstrap() {
   const minimap = new Minimap(); // ✅ Уменьшенная миникарта 80×80
   const enemies = [];
   const particles = [];
+  const wallTex = AssetGenerator.createWallTexture();
+  const pistolTex = AssetGenerator.createWeaponSprite();
+  const particles = new ParticleEffects();
   
   // 3. Состояние игры
   let gameState = 'playing';
