@@ -8,60 +8,45 @@ export class Sprite {
     this.height = 128;
   }
 
-  draw(ctx, player, zBuffer) {
+  draw(ctx, player) {
     if (!this.active) return;
 
     const dx = this.x - player.x;
     const dy = this.y - player.y;
-    const dist = Math.sqrt(dx * dx + dy * dy); // Дистанция в пикселях
+    const dist = Math.sqrt(dx * dx + dy * dy);
     
-    // Видимость: если слишком далеко или слишком близко (за спиной)
-    if (dist > 1200 || dist < 10) return; // 1200px ~ 18 клеток
+    // Не рисуем если слишком далеко
+    if (dist > 1000 || dist < 10) return;
 
     const spriteAngle = Math.atan2(dy, dx) - player.angle;
     let angle = spriteAngle;
     while (angle < -Math.PI) angle += 2 * Math.PI;
     while (angle > Math.PI) angle -= 2 * Math.PI;
 
+    // Не рисуем если за спиной
     if (Math.abs(angle) > Math.PI / 2.5) return;
 
-    // Размер спрайта
-    const screenH = (320 / (dist / 64)) * 1.5; // Масштабируем относительно клетки
-    const screenW = screenH * (this.width / this.height);
+    // Размер на экране
+    const screenH = (400 / (dist / 64));
+    const screenW = screenH;
     
     const screenX = (0.5 + angle / (Math.PI / 3)) * 320;
-    const screenY = 100 + screenH / 4;
+    const screenY = 100;
 
     const drawX = Math.floor(screenX - screenW / 2);
     const drawY = Math.floor(screenY - screenH / 2);
 
-    // ✅ ПРОВЕРКА Z-BUFFER (теперь единицы совпадают: пиксели vs пиксели)
-    const bufferIndex = Math.floor(screenX);
-    if (bufferIndex >= 0 && bufferIndex < zBuffer.length) {
-      if (dist > zBuffer[bufferIndex]) return; // Стена ближе спрайта
-    }
-
-    // Рисуем
-    if (this.texture) {
-      ctx.drawImage(this.texture, drawX, drawY, screenW, screenH);
-    } else {
-      // Красный шар-заглушка
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(screenX, screenY, screenW / 2, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(screenX - screenW/6, screenY - screenH/8, screenW/8, 0, Math.PI * 2);
-      ctx.arc(screenX + screenW/6, screenY - screenH/8, screenW/8, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.fillStyle = '#000';
-      ctx.beginPath();
-      ctx.arc(screenX - screenW/6, screenY - screenH/8, screenW/16, 0, Math.PI * 2);
-      ctx.arc(screenX + screenW/6, screenY - screenH/8, screenW/16, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // Рисуем КРАСНЫЙ КРУГ (чтобы точно было видно)
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, screenW / 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Чёрные глаза
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(screenX - 10, screenY - 5, 5, 0, Math.PI * 2);
+    ctx.arc(screenX + 10, screenY - 5, 5, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
