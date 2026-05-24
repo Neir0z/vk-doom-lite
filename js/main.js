@@ -8,28 +8,23 @@ import { Enemy3D } from './core/Enemy3D.js';
 import { TextureGenerator } from './render/Textures.js';
 
 async function bootstrap() {
-  // 1. Инициализация Canvas и движка
   const canvas = document.getElementById('game');
   const raycaster = new Raycaster(canvas);
   const input = new InputManager();
   const audio = new SoundManager();
 
-  // Активация звука по клику
   document.addEventListener('pointerdown', () => audio.init(), { once: true });
 
-  // Генерация текстур
   const enemyTex = TextureGenerator.createEnemy();
 
-  // 2. Создание Игрока (старт в безопасной точке 7,4)
+  // Старт игрока
   const player = new Player(7.5 * RENDER.mapScale, 4.5 * RENDER.mapScale);
   
   const enemies = [];
-  let damageFlash = 0; // Для красного экрана при уроне
+  let damageFlash = 0;
 
-  // 3. Управление волнами
   const waveManager = new WaveManager(() => {
     let mx, my, attempts = 0;
-    // Ищем свободную клетку для спавна
     do {
       mx = Math.floor(Math.random() * MAP[0].length);
       my = Math.floor(Math.random() * MAP.length);
@@ -40,31 +35,31 @@ async function bootstrap() {
     );
 
     if (attempts < 100) {
-      enemies.push(new Enemy3D(mx * RENDER.mapScale, my * RENDER.mapScale, enemyTex));
+      const enemy = new Enemy3D(mx * RENDER.mapScale, my * RENDER.mapScale, enemyTex);
+      enemies.push(enemy);
+      console.log(`👹 Enemy spawned at (${mx}, ${my}) = (${enemy.x}, ${enemy.y})`);
+    } else {
+      console.warn('⚠️ Could not spawn enemy');
     }
   });
 
-  let gameState = 'playing'; // playing, shop, gameover
+  let gameState = 'playing';
 
-  // 4. UI Элементы
   const ui = {
     health: document.getElementById('hud-health'),
     ammo: document.getElementById('hud-ammo'),
     money: document.getElementById('hud-money'),
     wave: document.getElementById('hud-wave'),
-    
     shopModal: document.getElementById('modal-shop'),
     shopMoney: document.getElementById('shop-money'),
     btnHealth: document.getElementById('btn-buy-health'),
     btnAmmo: document.getElementById('btn-buy-ammo'),
     btnNext: document.getElementById('btn-next-wave'),
-    
     overModal: document.getElementById('modal-over'),
     finalWave: document.getElementById('final-wave'),
     btnRestart: document.getElementById('btn-restart')
   };
 
-  // 5. Логика игры
   let highScore = 0;
   try {
     if (window.vkBridge) {
@@ -92,7 +87,6 @@ async function bootstrap() {
     waveManager.nextWave();
   }
 
-  // Покупки
   ui.btnHealth.addEventListener('click', () => {
     if (player.score >= SHOP.healthCost) {
       player.score -= SHOP.healthCost;
@@ -114,24 +108,14 @@ async function bootstrap() {
   ui.btnNext.addEventListener('click', closeShop);
   ui.btnRestart.addEventListener('click', () => location.reload());
 
-  // Обновление кнопок магазина
-  setInterval(() => {
-    if (gameState === 'shop') {
-      ui.btnHealth.disabled = player.score < SHOP.healthCost;
-      ui.btnAmmo.disabled = player.score < SHOP.ammoCost;
-    }
-  }, 200);
-
-  // 🔫 Стрельба (Упрощенная и быстрая версия)
   function shootRaycast() {
     const data = player.shoot();
     if (!data) return;
 
     audio.playShoot();
     
-    // Ищем ближайшего врага в центре прицела
     let nearestEnemy = null;
-    let nearestDist = 15; // Дальность выстрела (в клетках)
+    let nearestDist = 15;
 
     for (const enemy of enemies) {
       if (!enemy.active) continue;
@@ -140,28 +124,27 @@ async function bootstrap() {
       const dy = enemy.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       
-      if (dist > nearestDist * RENDER.mapScale) continue; // Слишком далеко
+      if (dist > nearestDist * RENDER.mapScale) continue;
       
-      // Проверка угла (в прицеле ли?)
       const angleToEnemy = Math.atan2(dy, dx);
       let angleDiff = angleToEnemy - player.angle;
       while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
       while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
 
-      // Если угол маленький, значит смотрим на врага
       if (Math.abs(angleDiff) < 0.2) {
         nearestEnemy = enemy;
-        nearestDist = dist / RENDER.mapScale; // Обновляем дистанцию
+        nearestDist = dist / RENDER.mapScale;
       }
     }
 
-    // Попадание
     if (nearestEnemy) {
       if (nearestEnemy.takeDamage(PLAYER.bulletDamage)) {
-        player.score += 10; // Очки за убийство
+        player.score += 10;
         audio.playExplosion();
+        console.log('💀 Enemy killed!');
       } else {
-        audio.playHurt(); // Звук попадания по мясу
+        audio.playHurt();
+        console.log(' Hit enemy!');
       }
     }
   }
@@ -178,69 +161,53 @@ async function bootstrap() {
     }
   }
 
-  // 🎮 ГЛАВНЫЙ ЦИКЛ
   let lastTime = 0;
   function gameLoop(timestamp) {
     const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
     lastTime = timestamp;
 
     if (gameState === 'playing') {
-      // 1. Обновление игрока
       player.update(dt, input);
 
-      // 2. Стрельба
       if (input.isShooting()) {
         shootRaycast();
         input.resetShoot();
       }
 
-      // 3. Обновление врагов
       const activeEnemies = [];
       for (const enemy of enemies) {
         if (enemy.active) {
-          // Если враг ударил игрока, включаем красный экран
           if (enemy.update(dt, player)) {
-             damageFlash = 1; // Максимальная яркость вспышки
+             damageFlash = 1;
           }
           activeEnemies.push(enemy);
         }
       }
 
-      // 4. Затухание красной вспышки
       if (damageFlash > 0) damageFlash -= dt * 3;
 
-      // 5. Управление волнами
       waveManager.update(dt);
       updateHUD();
 
       if (waveManager.checkWaveComplete(activeEnemies.length)) {
+        console.log(`✅ Wave ${waveManager.wave} complete!`);
         openShop();
       }
 
       if (player.health <= 0) endGame();
     }
 
-    // 🎨 РЕНДЕРИНГ
     const ctx = raycaster.ctx;
     
-    // Рисуем 3D мир
     raycaster.render(timestamp, player);
 
-    // Рисуем врагов (Спрайты) поверх стен
-    // Сортировка от дальнего к ближнему (Painter's Algorithm)
-    enemies.sort((a, b) => {
-      const distA = Math.hypot(a.x - player.x, a.y - player.y);
-      const distB = Math.hypot(b.x - player.x, b.y - player.y);
-      return distB - distA;
-    });
-
+    // Рисуем врагов БЕЗ zBuffer
     for (const enemy of enemies) {
       if (enemy.active) {
-        enemy.draw(ctx, player, raycaster.zBuffer);
+        enemy.draw(ctx, player); // Убрали zBuffer
       }
     }
 
-    // 🩸 Эффект урона (Красная виньетка поверх всего)
     if (damageFlash > 0) {
       ctx.fillStyle = `rgba(255, 0, 0, ${Math.min(0.6, damageFlash)})`;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -249,14 +216,13 @@ async function bootstrap() {
     requestAnimationFrame(gameLoop);
   }
 
-  // Запуск первой волны
   waveManager.startWave();
 
   setTimeout(() => {
     document.getElementById('loader').classList.add('hidden');
     document.getElementById('ui').classList.remove('hidden');
     requestAnimationFrame(gameLoop);
-    console.log(` DOOM-LITE v${GAME.version} | Step 7: FPS Action Ready`);
+    console.log(`🎮 DOOM-LITE Started | Enemies count: ${enemies.length}`);
   }, 800);
 }
 
