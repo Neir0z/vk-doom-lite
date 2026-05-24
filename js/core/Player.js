@@ -37,6 +37,7 @@ export class Player {
     this.y = Math.max(this.radius, Math.min(world.height - this.radius, this.y));
   }
 
+  /** Проверяет перезарядку и наличие патронов */
   canShoot() {
     const now = performance.now();
     if (now - this.lastShot < PLAYER.fireRate || this.ammo <= 0) return false;
@@ -45,6 +46,21 @@ export class Player {
     return true;
   }
 
-  takeDamage(amount) { this.health = Math.max(0, this.health - amount); }
-  addAmmo(amount) { this.ammo = Math.min(PLAYER.maxAmmo, this.ammo + amount); }
+  /** Возвращает данные для спавна пули или null */
+  shoot() {
+    if (!this.canShoot()) return null;
+    return {
+      x: this.x + Math.cos(this.angle) * 20,
+      y: this.y + Math.sin(this.angle) * 20,
+      angle: this.angle
+    };
+  }
+
+  takeDamage(amount) {
+    this.health = Math.max(0, this.health - amount);
+  }
+
+  addAmmo(amount) {
+    this.ammo = Math.min(PLAYER.maxAmmo, this.ammo + amount);
+  }
 }
