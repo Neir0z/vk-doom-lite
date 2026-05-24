@@ -240,6 +240,14 @@ function gameLoop(ts) {
   requestAnimationFrame(gameLoop);
 }
 
-// Старт в меню
+// Показать меню после загрузки
+setTimeout(() => {
+  const loader = document.getElementById('loader');
+  const menu = document.getElementById('menu');
+  if (loader) loader.classList.add('hidden');
+  if (menu) menu.classList.remove('hidden');
+  console.log('📋 Menu shown');
+}, 800);
+
 requestAnimationFrame(gameLoop);
 console.log('🎮 READY');
