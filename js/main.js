@@ -6,6 +6,7 @@ import { World } from './core/World.js';
 import { Bullet } from './core/Bullet.js';
 import { Enemy } from './core/Enemy.js';
 import { ParticleSystem } from './core/ParticleSystem.js';
+import { SoundManager } from './audio/SoundManager.js';
 
 async function bootstrap() {
   const canvas = document.getElementById('game');
@@ -36,9 +37,11 @@ async function bootstrap() {
   const bullets = [];
   const enemies = [];
   const particles = new ParticleSystem();
+  const audio = new SoundManager();
   
   let isGameOver = false;
   let spawnTimer = 0;
+  let isFiring = false; // Для визуальной вспышки
 
   const hudHealth = document.getElementById('hud-health');
   const hudAmmo = document.getElementById('hud-ammo');
@@ -70,7 +73,6 @@ async function bootstrap() {
   document.head.appendChild(style);
 
   function spawnEnemy() {
-    // Спавним врага в случайном месте, но подальше от игрока
     let ex, ey, dist;
     do {
       ex = 50 + Math.random() * (window.innerWidth - 100);
@@ -78,7 +80,7 @@ async function bootstrap() {
       const dx = ex - player.x;
       const dy = ey - player.y;
       dist = Math.sqrt(dx*dx + dy*dy);
-    } while (dist < 200); // Не ближе 200px к игроку
+    } while (dist < 200);
 
     enemies.push(new Enemy(ex, ey));
   }
@@ -98,14 +100,15 @@ async function bootstrap() {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < bullet.radius + enemy.radius) {
-          bullet.active = false; // Пуля исчезает
+          bullet.active = false;
+          audio.playExplosion(); // 🔊 Звук взрыва
+          
           if (enemy.takeDamage(PLAYER.bulletDamage)) {
-            // Враг умер!
             player.score++;
-            particles.emit(enemy.x, enemy.y, 15, '#ef4444', 100, 4); // Кровь
+            particles.emit(enemy.x, enemy.y, 15, '#ef4444', 100, 4);
             enemies.splice(e, 1);
           }
-          break; // Одна пуля = один враг
+          break;
         }
       }
     }
@@ -119,6 +122,7 @@ async function bootstrap() {
 
       if (dist < player.radius + enemy.radius) {
         player.takeDamage(ENEMY.damage);
+        audio.playHurt(); // 🔊 Звук урона
         canvas.classList.add('screen-shake');
         setTimeout(() => canvas.classList.remove('screen-shake'), 100);
         
@@ -146,6 +150,9 @@ async function bootstrap() {
         if (bulletData) {
           bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.angle));
           particles.emit(bulletData.x, bulletData.y, 5, '#fbbf24', 80, 3, Math.PI / 4);
+          audio.playShoot(); // 🔊 Звук выстрела
+          isFiring = true;
+          setTimeout(() => isFiring = false, 60); // Вспышка на 60мс
           input.resetShoot();
         }
       }
@@ -157,7 +164,6 @@ async function bootstrap() {
       checkCollisions();
       updateHUD();
 
-      // Спавн врагов каждые 2 сек
       spawnTimer += dt;
       if (spawnTimer > (ENEMY.spawnInterval / 1000)) {
         spawnEnemy();
@@ -170,44 +176,49 @@ async function bootstrap() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    // Камера
     const camX = -player.x + window.innerWidth / 2;
     const camY = -player.y + window.innerHeight / 2;
     ctx.translate(camX, camY);
 
     world.draw(ctx, textures.wall);
 
-    // Пули
     for (const b of bullets) b.draw(ctx, textures.bullet);
-
-    // Враги
     for (const e of enemies) e.draw(ctx, textures.enemy);
 
-    // Игрок
+    // Игрок + Вспышка
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(player.angle);
     ctx.drawImage(textures.player, -16, -16, 32, 32);
+    
+    //  Вспышка дула
+    if (isFiring) {
+      ctx.fillStyle = 'rgba(255, 200, 0, 0.8)';
+      ctx.beginPath();
+      ctx.arc(20, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(22, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
 
-    // Частицы
     particles.draw(ctx);
-
     ctx.restore();
 
     requestAnimationFrame(gameLoop);
   }
 
-  // Кнопки меню
-  document.getElementById('btn-restart').addEventListener('click', () => {
-    location.reload(); // Простейший рестарт
-  });
+  // Активация звука по первому клику (требование браузеров)
+  document.addEventListener('pointerdown', () => audio.init(), { once: true });
+  document.getElementById('btn-restart').addEventListener('click', () => location.reload());
 
   setTimeout(() => {
     document.getElementById('loader').classList.add('hidden');
     document.getElementById('ui').classList.remove('hidden');
     requestAnimationFrame(gameLoop);
-    console.log(`🔥 Шаг 3: Враги + Бои + Game Over активны!`);
+    console.log(`🔊 Шаг 4: Звуковой синтезатор и вспышки активны!`);
   }, 800);
 }
 
