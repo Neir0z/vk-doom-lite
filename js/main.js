@@ -1,9 +1,10 @@
-import { GAME, PLAYER } from './config.js';
+import { GAME, PLAYER, ENEMY } from './config.js';
 import { InputManager } from './core/Input.js';
 import { TextureGenerator } from './render/Textures.js';
 import { Player } from './core/Player.js';
 import { World } from './core/World.js';
 import { Bullet } from './core/Bullet.js';
+import { Enemy } from './core/Enemy.js';
 import { ParticleSystem } from './core/ParticleSystem.js';
 
 async function bootstrap() {
@@ -31,18 +32,26 @@ async function bootstrap() {
   const input = new InputManager(canvas);
   const world = new World(window.innerWidth, window.innerHeight);
   const player = new Player(window.innerWidth / 2, window.innerHeight / 2);
+  
   const bullets = [];
+  const enemies = [];
   const particles = new ParticleSystem();
+  
+  let isGameOver = false;
+  let spawnTimer = 0;
 
   const hudHealth = document.getElementById('hud-health');
   const hudAmmo = document.getElementById('hud-ammo');
   const hudScore = document.getElementById('hud-score');
+  const modalMenu = document.getElementById('modal-menu');
+  const modalTitle = document.getElementById('modal-title');
+  const modalScore = document.getElementById('modal-score');
+
   const updateHUD = () => {
     hudHealth.textContent = `❤️ ${player.health}`;
     hudAmmo.textContent = `🔫 ${player.ammo}`;
     hudScore.textContent = `💀 ${player.score}`;
     
-    // Визуальная индикация низкого здоровья
     if (player.health < 30) {
       hudHealth.style.color = '#ef4444';
       hudHealth.style.animation = 'pulse 0.5s infinite';
@@ -52,54 +61,116 @@ async function bootstrap() {
     }
   };
 
-  // CSS-анимация для пульсации
   const style = document.createElement('style');
   style.textContent = `
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.1); }
-    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.1); } }
+    .screen-shake { animation: shake 0.1s; }
+    @keyframes shake { 0% { transform: translate(1px, 1px); } 25% { transform: translate(-1px, -1px); } 50% { transform: translate(1px, -1px); } 75% { transform: translate(-1px, 1px); } 100% { transform: translate(1px, 1px); } }
   `;
   document.head.appendChild(style);
+
+  function spawnEnemy() {
+    // Спавним врага в случайном месте, но подальше от игрока
+    let ex, ey, dist;
+    do {
+      ex = 50 + Math.random() * (window.innerWidth - 100);
+      ey = 50 + Math.random() * (window.innerHeight - 100);
+      const dx = ex - player.x;
+      const dy = ey - player.y;
+      dist = Math.sqrt(dx*dx + dy*dy);
+    } while (dist < 200); // Не ближе 200px к игроку
+
+    enemies.push(new Enemy(ex, ey));
+  }
+
+  function checkCollisions() {
+    // 1. Пули vs Враги
+    for (let b = bullets.length - 1; b >= 0; b--) {
+      const bullet = bullets[b];
+      if (!bullet.active) continue;
+
+      for (let e = enemies.length - 1; e >= 0; e--) {
+        const enemy = enemies[e];
+        if (!enemy.active) continue;
+
+        const dx = bullet.x - enemy.x;
+        const dy = bullet.y - enemy.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < bullet.radius + enemy.radius) {
+          bullet.active = false; // Пуля исчезает
+          if (enemy.takeDamage(PLAYER.bulletDamage)) {
+            // Враг умер!
+            player.score++;
+            particles.emit(enemy.x, enemy.y, 15, '#ef4444', 100, 4); // Кровь
+            enemies.splice(e, 1);
+          }
+          break; // Одна пуля = один враг
+        }
+      }
+    }
+
+    // 2. Враги vs Игрок
+    for (const enemy of enemies) {
+      if (!enemy.active) continue;
+      const dx = player.x - enemy.x;
+      const dy = player.y - enemy.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < player.radius + enemy.radius) {
+        player.takeDamage(ENEMY.damage);
+        canvas.classList.add('screen-shake');
+        setTimeout(() => canvas.classList.remove('screen-shake'), 100);
+        
+        if (player.health <= 0 && !isGameOver) {
+          isGameOver = true;
+          modalTitle.textContent = 'GAME OVER';
+          modalScore.textContent = `Счёт: ${player.score}`;
+          modalMenu.showModal();
+        }
+      }
+    }
+  }
 
   let lastTime = 0;
   function gameLoop(timestamp) {
     const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
     lastTime = timestamp;
 
-    // --- UPDATE ---
-    player.update(dt, input, world);
+    if (!isGameOver) {
+      // --- UPDATE ---
+      player.update(dt, input, world);
 
-    // Стрельба
-    if (input.isShooting()) {
-      const bulletData = player.shoot();
-      if (bulletData) {
-        bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.angle));
-        // Эффект выстрела
-        particles.emit(
-          bulletData.x, bulletData.y,
-          5, '#fbbf24', 80, 3, Math.PI / 4
-        );
-        // Отдача камеры (просто тряска)
-        canvas.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
-        setTimeout(() => canvas.style.transform = '', 50);
-        input.resetShoot();
+      if (input.isShooting()) {
+        const bulletData = player.shoot();
+        if (bulletData) {
+          bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.angle));
+          particles.emit(bulletData.x, bulletData.y, 5, '#fbbf24', 80, 3, Math.PI / 4);
+          input.resetShoot();
+        }
+      }
+
+      bullets.forEach(b => b.update(dt, world));
+      enemies.forEach(e => e.update(dt, player));
+      particles.update(dt);
+
+      checkCollisions();
+      updateHUD();
+
+      // Спавн врагов каждые 2 сек
+      spawnTimer += dt;
+      if (spawnTimer > (ENEMY.spawnInterval / 1000)) {
+        spawnEnemy();
+        spawnTimer = 0;
       }
     }
-
-    // Обновление пуль
-    bullets.forEach(b => b.update(dt, world));
-    bullets.length = bullets.filter(b => b.active).length;
-
-    // Частицы
-    particles.update(dt);
-    updateHUD();
 
     // --- RENDER ---
     ctx.fillStyle = '#0a0a14';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
+    // Камера
     const camX = -player.x + window.innerWidth / 2;
     const camY = -player.y + window.innerHeight / 2;
     ctx.translate(camX, camY);
@@ -108,6 +179,9 @@ async function bootstrap() {
 
     // Пули
     for (const b of bullets) b.draw(ctx, textures.bullet);
+
+    // Враги
+    for (const e of enemies) e.draw(ctx, textures.enemy);
 
     // Игрок
     ctx.save();
@@ -124,11 +198,16 @@ async function bootstrap() {
     requestAnimationFrame(gameLoop);
   }
 
+  // Кнопки меню
+  document.getElementById('btn-restart').addEventListener('click', () => {
+    location.reload(); // Простейший рестарт
+  });
+
   setTimeout(() => {
     document.getElementById('loader').classList.add('hidden');
     document.getElementById('ui').classList.remove('hidden');
     requestAnimationFrame(gameLoop);
-    console.log(`🔥 Шаг 2: Стрельба активирована! Пробел/тап для огня.`);
+    console.log(`🔥 Шаг 3: Враги + Бои + Game Over активны!`);
   }, 800);
 }
 
