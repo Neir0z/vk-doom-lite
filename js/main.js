@@ -363,3 +363,27 @@ setTimeout(() => {
 }, 800);
 
 console.log('🎮 READY');
+// Принудительный запуск
+console.log('🔄 Forcing game loop start...');
+setTimeout(() => {
+  console.log('⏰ Timeout check - canvas:', canvas ? 'exists' : 'null');
+  console.log('⏰ gameStarted:', gameStarted);
+  console.log('⏰ currentScreen:', currentScreen);
+  
+  if (canvas && gameStarted) {
+    console.log('⏰ Manual render test...');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#0f0';
+      ctx.fillRect(50, 50, 200, 150);
+      ctx.fillStyle = '#fff';
+      ctx.font = '16px monospace';
+      ctx.fillText('MANUAL TEST', 70, 90);
+      console.log('✅ Manual render done!');
+    } else {
+      console.error('❌ Cannot get context!');
+    }
+  } else {
+    console.error('❌ Canvas or gameStarted is false');
+  }
+}, 2000);
