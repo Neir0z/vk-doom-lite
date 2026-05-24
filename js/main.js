@@ -24,15 +24,12 @@ let stepTimer = 0;
 let currentWeapon = 'pistol';
 let hasShotgun = false, hasMachinegun = false;
 
-// Загрузка спрайта пистолета
-//const pistolImg = new Image();
-//pistolImg.src = 'assets/pistol.png';
-// Загрузка кадров анимации пистолета
 const pistolFrames = [];
 for (let i = 0; i <= 4; i++) {
   pistolFrames[i] = new Image();
   pistolFrames[i].src = `assets/pistol_${i}.png`;
 }
+
 if (canvas) {
   canvas.width = RENDER.numRays;
   canvas.height = Math.floor(RENDER.numRays * 0.6);
@@ -268,7 +265,7 @@ function gameLoop(ts) {
     
     isShooting = input.isShooting();
     
-    if(isShooting) { 
+    if(isShooting && raycaster.isReady()) { 
       shootRaycast(); 
       input.resetShoot(); 
     }
@@ -298,7 +295,7 @@ function gameLoop(ts) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     if(gameStarted) {
-      raycaster.render(ts, player, wallTex, isShooting);
+      raycaster.render(ts, player, wallTex, isShooting, dt);
       
       enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
       for(const e of enemies) if(e.active) e.draw(ctx, player);
