@@ -19,23 +19,22 @@ const music = new MusicGenerator();
 let currentScreen = 'menu';
 let gameStarted = false;
 
-// Инициализация размера canvas
-function resizeCanvas() {
-  if (!canvas) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = RENDER.numRays;
-  canvas.height = Math.floor(RENDER.numRays * 0.6);
-  canvas.style.width = '100vw';
-  canvas.style.height = '100vh';
-}
-
 window.showScreen = function(screenName) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  // Скрыть все экраны
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.add('hidden');
+    s.style.display = 'none';
+  });
+  
+  // Показать нужный
   const target = document.getElementById('screen-' + screenName);
   if (target) {
     target.classList.remove('hidden');
+    target.style.display = 'flex';
     currentScreen = screenName;
+    console.log('Screen changed to:', screenName);
   }
+  
   if (screenName === 'game' && !gameStarted) {
     startGame();
   }
@@ -60,10 +59,27 @@ window.buyItem = function(type, cost) {
 };
 
 function startGame() {
-  if (gameStarted) return;
+  console.log('Starting game...');
   gameStarted = true;
   currentScreen = 'game';
-  resizeCanvas();
+  
+  // Показать canvas
+  if (canvas) {
+    canvas.style.display = 'block';
+    canvas.width = RENDER.numRays;
+    canvas.height = Math.floor(RENDER.numRays * 0.6);
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    console.log('Canvas initialized:', canvas.width, 'x', canvas.height);
+  }
+  
+  // Показать UI
+  const ui = document.getElementById('ui');
+  if (ui) {
+    ui.classList.remove('hidden');
+    ui.style.display = 'block';
+  }
+  
   music.play();
   enemies.length = 0;
   player.health = PLAYER.maxHealth;
@@ -78,6 +94,7 @@ function startGame() {
   hasMachinegun = false;
   waveManager.startWave();
   updateHUD();
+  console.log('Game started!');
 }
 
 const raycaster = new Raycaster(canvas);
@@ -255,18 +272,21 @@ function gameLoop(ts) {
     if(player.health<=0 && currentScreen==='game') endGame();
   }
 
+  // Рендеринг
   const ctx = raycaster.ctx;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  if (ctx && canvas) {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
   
-  if(gameStarted) {
+  if(gameStarted && canvas && ctx) {
     raycaster.render(ts, player, wallTex);
     
     enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
     for(const e of enemies) if(e.active) e.draw(ctx, player);
     particles.draw(ctx);
     
-    const cx=ctx.canvas.width/2, cy=ctx.canvas.height/2;
+    const cx=canvas.width/2, cy=canvas.height/2;
     ctx.strokeStyle=currentScreen==='game'?'#0f0':'#555'; ctx.lineWidth=2;
     ctx.beginPath();
     ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
@@ -276,21 +296,21 @@ function gameLoop(ts) {
     minimap.draw(ctx, player, enemies);
 
     ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
-    ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, ctx.canvas.height-8);
+    ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, canvas.height-8);
     ctx.shadowBlur=0;
 
-    if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height); }
+    if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,canvas.width,canvas.height); }
   }
 
   requestAnimationFrame(gameLoop);
 }
 
-// Инициализация
-resizeCanvas();
-
+// Старт
 setTimeout(() => {
+  console.log('Initializing...');
   if(loader) loader.classList.add('hidden');
   showScreen('menu');
+  console.log('Menu shown');
 }, 800);
 
 console.log('🎮 READY');
