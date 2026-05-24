@@ -12,36 +12,59 @@
   <!-- Загрузочный экран -->
   <div id="loader" class="loader">
     <div class="loader__bar"></div>
-    <p>ЗАГРУЗКА АРСЕНАЛА...</p>
+    <p>ИНИЦИАЛИЗАЦИЯ...</p>
   </div>
 
-  <!-- Игровой канвас -->
   <canvas id="game" class="game-canvas"></canvas>
 
-  <!-- UI поверх игры -->
+  <!-- UI -->
   <div id="ui" class="ui hidden">
     <div class="hud">
-      <span id="hud-health">❤️ 100</span>
-      <span id="hud-ammo">🔫 30</span>
-      <span id="hud-score">💀 0</span>
+      <div class="hud__stat">❤️ <span id="hud-health">100</span></div>
+      <div class="hud__stat"> <span id="hud-ammo">30</span></div>
+      <div class="hud__stat" style="color:#fbbf24">💰 <span id="hud-money">0</span></div>
+      <div class="hud__stat">🌊 <span id="hud-wave">1</span></div>
     </div>
     
-    <!-- Виртуальный джойстик для мобильных -->
+    <!-- Контролы для мобилок -->
     <div id="joystick" class="joystick">
       <div class="joystick__base"></div>
       <div class="joystick__stick"></div>
     </div>
-    
-    <!-- Кнопка стрельбы -->
-    <button id="btn-shoot" class="btn-shoot" aria-label="Стрелять">🔥</button>
-    
-    <!-- Меню паузы / геймовер -->
-    <dialog id="modal-menu" class="modal">
+    <button id="btn-shoot" class="btn-shoot">🔥</button>
+
+    <!-- Меню Магазина (Появляется между волнами) -->
+    <dialog id="modal-shop" class="modal shop-modal">
       <div class="modal__content">
-        <h2 id="modal-title">ПАУЗА</h2>
-        <p id="modal-score">Счёт: 0</p>
-        <button id="btn-restart" class="btn btn--primary">🔄 Заново</button>
-        <button id="btn-resume" class="btn btn--secondary">▶️ Продолжить</button>
+        <h2 class="accent-text">ВОЛНА ПРОЙДЕНА</h2>
+        <p class="shop-balance">Доступно: <span id="shop-money">0</span> 💰</p>
+        
+        <div class="shop-grid">
+          <button id="btn-buy-health" class="shop-item">
+            <span class="shop-icon">❤️</span>
+            <span class="shop-desc">+50 HP</span>
+            <span class="shop-price">50 💰</span>
+          </button>
+          <button id="btn-buy-ammo" class="shop-item">
+            <span class="shop-icon">🔫</span>
+            <span class="shop-desc">+15 Ammo</span>
+            <span class="shop-price">30 💰</span>
+          </button>
+        </div>
+
+        <button id="btn-next-wave" class="btn btn--primary" style="margin-top: 20px; width: 100%;">
+          СЛЕДУЮЩАЯ ВОЛНА 
+        </button>
+      </div>
+    </dialog>
+
+    <!-- Меню Game Over -->
+    <dialog id="modal-over" class="modal">
+      <div class="modal__content">
+        <h2 class="accent-text">GAME OVER</h2>
+        <p>Выживано волн: <span id="final-wave" class="big-score">0</span></p>
+        <p>Рекорд (VK): <span id="highscore-display" class="highscore">0</span></p>
+        <button id="btn-restart" class="btn btn--primary">🔄 В БОЙ</button>
       </div>
     </dialog>
   </div>
