@@ -19,6 +19,19 @@ const music = new MusicGenerator();
 let currentScreen = 'menu';
 let gameStarted = false;
 
+// Установить размер canvas сразу
+if (canvas) {
+  canvas.width = RENDER.numRays;
+  canvas.height = Math.floor(RENDER.numRays * 0.6);
+  canvas.style.width = '100vw';
+  canvas.style.height = '100vh';
+  canvas.style.display = 'block';
+  canvas.style.position = 'fixed';
+  canvas.style.top = '0';
+  canvas.style.left = '0';
+  canvas.style.zIndex = '1';
+}
+
 window.showScreen = function(screenName) {
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.add('hidden');
@@ -59,15 +72,11 @@ function startGame() {
   gameStarted = true;
   currentScreen = 'game';
   
-  // Показать canvas явно
+  // Показать canvas
   if (canvas) {
     canvas.style.display = 'block';
     canvas.style.visibility = 'visible';
-    canvas.width = RENDER.numRays;
-    canvas.height = Math.floor(RENDER.numRays * 0.6);
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    console.log('✓ Canvas:', canvas.width, 'x', canvas.height);
+    canvas.style.zIndex = '1';
   }
   
   // Показать UI
@@ -75,7 +84,7 @@ function startGame() {
   if (ui) {
     ui.classList.remove('hidden');
     ui.style.display = 'block';
-    ui.style.visibility = 'visible';
+    ui.style.zIndex = '10';
   }
   
   music.play();
@@ -242,11 +251,9 @@ function endGame() {
 }
 
 let lastTime = 0;
-let frameCount = 0;
 function gameLoop(ts) {
   const dt = Math.min((ts-lastTime)/1000, 0.04);
   lastTime = ts;
-  frameCount++;
 
   if(currentScreen==='game' && gameStarted) {
     player.update(dt, input);
@@ -272,50 +279,35 @@ function gameLoop(ts) {
     if(player.health<=0 && currentScreen==='game') endGame();
   }
 
-  // Рендеринг
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      // Очистка
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Рендеринг всегда работает
+  const ctx = raycaster.ctx;
+  if (ctx && canvas) {
+    // Очистка
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    if(gameStarted) {
+      raycaster.render(ts, player, wallTex);
       
-      if(gameStarted) {
-        // Рендер стен
-        raycaster.render(ts, player, wallTex);
-        
-        // Враги
-        enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
-        for(const e of enemies) if(e.active) e.draw(ctx, player);
-        
-        // Частицы
-        particles.draw(ctx);
-        
-        // Прицел
-        const cx=canvas.width/2, cy=canvas.height/2;
-        ctx.strokeStyle=currentScreen==='game'?'#0f0':'#555'; ctx.lineWidth=2;
-        ctx.beginPath();
-        ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
-        ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
-        ctx.stroke();
+      enemies.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+      for(const e of enemies) if(e.active) e.draw(ctx, player);
+      particles.draw(ctx);
+      
+      const cx=canvas.width/2, cy=canvas.height/2;
+      ctx.strokeStyle=currentScreen==='game'?'#0f0':'#555'; ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(cx-8,cy); ctx.lineTo(cx-3,cy); ctx.moveTo(cx+3,cy); ctx.lineTo(cx+8,cy);
+      ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy-3); ctx.moveTo(cx,cy+3); ctx.lineTo(cx,cy+8);
+      ctx.stroke();
 
-        // Миникарта
-        minimap.draw(ctx, player, enemies);
+      minimap.draw(ctx, player, enemies);
 
-        // Текст оружия
-        ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
-        ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, canvas.height-8);
-        ctx.shadowBlur=0;
+      ctx.fillStyle='#fff'; ctx.font='bold 11px monospace'; ctx.shadowColor='#000'; ctx.shadowBlur=3;
+      ctx.fillText(WEAPONS[currentWeapon].name+' | 🔫 '+player.ammo, 8, canvas.height-8);
+      ctx.shadowBlur=0;
 
-        // Урон
-        if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,canvas.width,canvas.height); }
-      }
+      if(damageFlash>0) { ctx.fillStyle='rgba(255,0,0,'+Math.min(0.5,damageFlash)+')'; ctx.fillRect(0,0,canvas.width,canvas.height); }
     }
-  }
-  
-  // Лог каждые 60 кадров
-  if(frameCount % 60 === 0 && gameStarted) {
-    console.log('Frames:', frameCount, 'Screen:', currentScreen, 'Canvas visible:', canvas ? canvas.style.display : 'none');
   }
 
   requestAnimationFrame(gameLoop);
