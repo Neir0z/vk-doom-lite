@@ -15,7 +15,7 @@ export class Raycaster {
   this.frameTimer = 0;
 }
 
-  render(time, player, wallTex) {
+  render(time, player, wallTex, isShooting) {
     const ctx = this.ctx;
     const w = this.width;
     const h = this.height;
@@ -78,6 +78,7 @@ export class Raycaster {
         } else if (MAP[mapY][mapX] > 0) {
           hit = true;
         }
+        this._drawWeapon(ctx, time, isShooting);
       }
 
       if (side === 0) {
