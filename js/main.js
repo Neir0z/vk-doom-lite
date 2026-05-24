@@ -364,7 +364,7 @@ setTimeout(() => {
 
 // Принудительный запуск gameLoop
 console.log('🔄 Starting gameLoop...');
-let lastTime = 0;
+
 function gameLoop(ts) {
   const dt = Math.min((ts-lastTime)/1000, 0.04);
   lastTime = ts;
