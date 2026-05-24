@@ -25,9 +25,14 @@ let currentWeapon = 'pistol';
 let hasShotgun = false, hasMachinegun = false;
 
 // Загрузка спрайта пистолета
-const pistolImg = new Image();
-pistolImg.src = 'assets/pistol.png';
-
+//const pistolImg = new Image();
+//pistolImg.src = 'assets/pistol.png';
+// Загрузка кадров анимации пистолета
+const pistolFrames = [];
+for (let i = 0; i <= 4; i++) {
+  pistolFrames[i] = new Image();
+  pistolFrames[i].src = `assets/pistol_${i}.png`;
+}
 if (canvas) {
   canvas.width = RENDER.numRays;
   canvas.height = Math.floor(RENDER.numRays * 0.6);
@@ -110,7 +115,7 @@ function startGame() {
   console.log('✅ Game running!');
 }
 
-const raycaster = new Raycaster(canvas, pistolImg);
+const raycaster = new Raycaster(canvas, pistolFrames);
 const input = new InputManager();
 const audio = new SoundManager();
 document.addEventListener('pointerdown', () => audio.init(), { once: true });
